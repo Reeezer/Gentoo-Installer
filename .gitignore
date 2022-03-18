@@ -1,3 +1,7 @@
 __pycache__/
+install/
+install.tar.gz
+
 install.sh
+chroot.sh
 disks.sfdisk
