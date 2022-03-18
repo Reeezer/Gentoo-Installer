@@ -19,7 +19,7 @@ class ShellWriter:
         self.file.close()
     
     def add_command(self, command:str, safe=True) -> None:
-        self.file.write(command + (" || exit 1\n" if safe else "")) # TODO make the script stop if something fails
+        self.file.write(command + (" || exit 1\n" if safe else "\n")) # TODO make the script stop if something fails
         
     def add_comment(self, comment:str, space:bool=False) -> None:
         comment = f"# {comment}"
