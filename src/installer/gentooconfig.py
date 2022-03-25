@@ -297,6 +297,6 @@ class GentooConfig:
         
 
 if __name__ == '__main__':
-    genconfig = GentooConfig(sysconfigpath='installer.conf', driveconfigpath='disks.conf')
+    genconfig = GentooConfig(sysconfigpath='config/installer.conf', driveconfigpath='config/disks.conf')
     genconfig.genconfig()
     genconfig.finalize()

@@ -1,6 +1,6 @@
 __pycache__/
 .idea/
-install/
+autogen/
 install.tar.gz
 
 install.sh
