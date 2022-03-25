@@ -5,6 +5,7 @@
 - By default no user account is created and the root password is empty, allow giving a password in an encrypted manner
 - Make it possible to specify additional packages to install
 - Add wireless internet support
+- Make the installer fail if invalid options are used
 
 ## Secondary
 

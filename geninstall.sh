@@ -9,6 +9,7 @@ mkdir autogen
 python src/installer/gentooconfig.py
 
 cp etc/portage/make.conf autogen/
+cp misc/done.txt autogen
 
 dos2unix autogen/install.sh
 dos2unix autogen/chroot.sh

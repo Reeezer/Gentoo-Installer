@@ -182,6 +182,7 @@ class GentooConfig:
         self.baseshell.add_comment("finalize", space=True)
         
         self.unmount_chroot()
+        self.figlet_done()
         
     ## network
     
@@ -383,6 +384,10 @@ class GentooConfig:
         
         self.baseshell.add_command("umount -l /mnt/gentoo/dev{/shm,/pts,}") # FIXME what does this do?
         self.baseshell.add_command("umount -R /mnt/gentoo") 
+        
+    def figlet_done(self):
+        self.baseshell.add_comment("display a nice message to the user")
+        self.baseshell.add_command("cat done.txt")
 
 if __name__ == '__main__':
     genconfig = GentooConfig(sysconfigpath='config/installer.conf', driveconfigpath='config/disks.conf')
