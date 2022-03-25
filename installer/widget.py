@@ -24,36 +24,46 @@ class ComboPreference(Preference):
         layout = QHBoxLayout()
         layout.addWidget(label)
         layout.addWidget(self.cbBox)
+        
         self.setLayout(layout)
 
 class TextPreference(Preference):
     def __init__(self, title:str):
         Preference.__init__(self, title)
-        layout = QHBoxLayout()
+        
         self.lineEdit = QLineEdit()
+        label = QLabel(title)
 
-        layout.addWidget(QLabel(title))
+        layout = QHBoxLayout()
+        layout.addWidget(label)
         layout.addWidget(self.lineEdit)
+        
         self.setLayout(layout)
 
 class IntPreference(Preference):
     def __init__(self, title:str):
         Preference.__init__(self, title)
-        layout = QHBoxLayout()
+        
         self.spinbox = QSpinBox()
+        label = QLabel(title)
 
-        layout.addWidget(QLabel(title))
+        layout = QHBoxLayout()
+        layout.addWidget(label)
         layout.addWidget(self.spinbox)
+        
         self.setLayout(layout)
 
 class CheckPreference(Preference):
     def __init__(self, title:str):
         Preference.__init__(self, title)
-        layout = QHBoxLayout()
+        
         self.checkbox = QCheckBox()
+        label = QLabel(title)
 
-        layout.addWidget(QLabel(title))
+        layout = QHBoxLayout()
+        layout.addWidget(label)
         layout.addWidget(self.checkbox)
+        
         self.setLayout(layout)
 
 
@@ -83,22 +93,32 @@ class LocalisationCategory(Category):
     def export(self):
         super().export()
         file = open('installer/localisation.conf', 'w')
+        
         lang = self.langCombo.cbBox.currentText()
         keyboard = self.keyboardCombo.cbBox.currentText()
         conf = ConfigGenerator(file, 'locale', {'lang':lang, 'keyboard':keyboard})
+        
         conf.generate()
 
 class PartitionWidget(Preference):
     def __init__(self, title):
         Preference.__init__(self, title)
         layout = QVBoxLayout()
+        
+        self.label = QLabel(title)
+        self.startPref = IntPreference("Start")
+        self.sizePref = IntPreference("Size")
+        self.mountPointPref = TextPreference("Mount point")
+        self.fileSystemPref = TextPreference("File system")
+        self.bootablePref = CheckPreference("Bootable")
 
-        layout.addWidget(QLabel(title))
-        layout.addWidget(TextPreference("Start"))
-        layout.addWidget(IntPreference("Size"))
-        layout.addWidget(TextPreference("Mount point"))
-        layout.addWidget(TextPreference("File system"))
-        layout.addWidget(CheckPreference("Bootable"))
+        layout.addWidget(self.label)
+        layout.addWidget(self.startPref)
+        layout.addWidget(self.sizePref)
+        layout.addWidget(self.mountPointPref)
+        layout.addWidget(self.fileSystemPref)
+        layout.addWidget(self.bootablePref)
+        
         self.setLayout(layout)
 
 
@@ -112,25 +132,64 @@ class PartitionCategory(Category):
         btnAdd.clicked.connect(self.addPartition)
         btnDelete = QPushButton("Supprimer")
         btnDelete.clicked.connect(self.deletePartition)
+        
+        self.generalSizePref = IntPreference("Size")
+        self.generalDrivePref = TextPreference("Drive")
+        self.generalLabelPref = ComboPreference("Label", ["gpt", "dos"])
 
-        layout.addWidget(IntPreference("Size"))
-        layout.addWidget(TextPreference("Drive"))
-        layout.addWidget(ComboPreference("Label", ["gpt", "dos"]))
+        layout.addWidget(self.generalSizePref)
+        layout.addWidget(self.generalDrivePref)
+        layout.addWidget(self.generalLabelPref)
         layout.addWidget(btnAdd)
         layout.addWidget(btnDelete)
+        
         self.partitionsLayout = QHBoxLayout()
         layout.addLayout(self.partitionsLayout)
+        
         self.widget.setLayout(layout)
 
     def addPartition(self):
-        partition = PartitionWidget(f"Parition {len(self.partitions)}")
+        partition = PartitionWidget(f"Partition {len(self.partitions)}")
         self.partitions.append(partition)
         self.partitionsLayout.addWidget(partition)
 
     def deletePartition(self):
         self.partitions[-1].setParent(None)
         self.partitions.pop(-1)
-        print(self.partitions)
+        
+    def export(self):
+        super().export()
+        file = open('installer/partitions.conf', 'w')
+        confs = list()
+        
+        # General 
+        size = self.generalSizePref.spinbox.value()
+        drive = self.generalDrivePref.lineEdit.text()
+        label = self.generalLabelPref.cbBox.currentText()
+        confs.append(ConfigGenerator(file, 'general', {'size':size, 'label':label, 'drive': drive}))
+        
+        # Each partition
+        i = 0
+        for partition in self.partitions:
+            start = partition.startPref.spinbox.value()
+            size = partition.sizePref.spinbox.value()
+            mountpoint = partition.mountPointPref.lineEdit.text()
+            filesystem = partition.fileSystemPref.lineEdit.text()
+            bootable = partition.bootablePref.checkbox.isChecked()
+            
+            attributes = dict()
+            if start > 0:
+                attributes['start'] = start
+            if size > 0:
+                attributes['size'] = size
+            if bootable:
+                attributes['bootable'] = bootable
+            attributes['mountpoint'] = mountpoint
+            attributes['filesystem'] = filesystem
+            confs.append(ConfigGenerator(file, f"partition{i}", attributes))
+            i += 1
+        
+        [conf.generate() for conf in confs]
 
 
 class InitSystemCategory(Category):
