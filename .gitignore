@@ -2,8 +2,3 @@ __pycache__/
 .idea/
 autogen/
 install.tar.gz
-
-install.sh
-chroot.sh
-disks.sfdisk
-fstab.txt

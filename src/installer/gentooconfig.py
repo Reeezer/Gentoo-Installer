@@ -1,4 +1,5 @@
 from configparser import ConfigParser
+import os
 
 from shellwriter import ShellWriter
 from sfdisk import SFDisk
@@ -10,12 +11,14 @@ class GentooConfig:
     
     All install actions begin with act_ and are mapped to the handbook sections
     """
+    OUTPUT_DIR = "autogen"
+    
     
     # FIXME currently it is only possible to install to a single drive
     
     def __init__(self, sysconfigpath, driveconfigpath):
-        self.baseshell = ShellWriter('install.sh')  # prepares the disks and 
-        self.chrootshell = ShellWriter('chroot.sh') # system install inside the chroot
+        self.baseshell = ShellWriter(os.path.join(GentooConfig.OUTPUT_DIR, 'install.sh'))  # prepares the disks and 
+        self.chrootshell = ShellWriter(os.path.join(GentooConfig.OUTPUT_DIR, 'chroot.sh')) # system install inside the chroot
         
         self.sysconfigparser = ConfigParser()
         self.sysconfigpath = sysconfigpath
@@ -104,11 +107,11 @@ class GentooConfig:
             # addpart returns the drive string
             partition['drive'] = sfdisk.addpart(**partition)
                 
-        with open("disks.sfdisk", "w") as sfconfig:
+        with open(os.path.join(GentooConfig.OUTPUT_DIR, "disks.sfdisk"), "w") as sfconfig:
             sfconfig.write(sfdisk.dumpsconfig())
         
         fstab = FSTab(self.partitions)
-        with open("fstab.txt", "w") as fstabfile:
+        with open(os.path.join(GentooConfig.OUTPUT_DIR, "fstab.txt"), "w") as fstabfile:
             fstabfile.write(fstab.dumps())
             
 
