@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 from api import get_mirrors
 
+from generate_conf import ConfigGenerator
 
 class Preference(QWidget):
     def __init__(self, title:str):
@@ -14,12 +15,14 @@ class Preference(QWidget):
 class ComboPreference(Preference):
     def __init__(self, title:str, choices:list):
         Preference.__init__(self, title)
-        layout = QHBoxLayout()
+        
         self.cbBox = QComboBox()
-        for choice in choices:
-            self.cbBox.addItem(choice)
+        [self.cbBox.addItem(choice) for choice in choices]
+        
+        label = QLabel(title)
 
-        layout.addWidget(QLabel(title))
+        layout = QHBoxLayout()
+        layout.addWidget(label)
         layout.addWidget(self.cbBox)
         self.setLayout(layout)
 
@@ -29,6 +32,7 @@ class Category(QListWidgetItem):
         QListWidgetItem.__init__(self, title)
         self.widget = QWidget()
         self.title = title
+        
     def export(self):
         print(self.title)
 
@@ -36,12 +40,21 @@ class Category(QListWidgetItem):
 class LocalisationCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
+        self.langCombo = ComboPreference("Langue", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
+        self.keyboardCombo = ComboPreference("Clavier", ["fr", "azerty"])
+        
         layout = QVBoxLayout()
-        layout.addWidget(ComboPreference("Langue", ["Français", "Allemand"]))
-        layout.addWidget(ComboPreference("Clavier", ["Français", "Allemand"]))
+        layout.addWidget(self.langCombo)
+        layout.addWidget(self.keyboardCombo)
         self.widget.setLayout(layout)
-
-
+        
+    def export(self):
+        super().export()
+        file = open('installer/localisation.conf', 'w')
+        lang = self.langCombo.cbBox.currentText()
+        keyboard = self.keyboardCombo.cbBox.currentText()
+        conf = ConfigGenerator(file, 'locale', {'lang':lang, 'keyboard':keyboard})
+        conf.generate()
 
 class PartitionWidget(Preference):
     def __init__(self, title):
@@ -56,8 +69,6 @@ class PartitionWidget(Preference):
         layout.addWidget(QLabel("size"))
         layout.addWidget(QLineEdit())
         self.setLayout(layout)
-
-
 
 
 class PartitionCategory(Category):
@@ -163,7 +174,7 @@ class SideBar(QListWidget):
         self.addItem(LocalisationCategory("Localisation"))
         self.addItem(PartitionCategory("Partitions"))
         self.addItem(InitSystemCategory("Système d'amorçage"))
-        self.addItem(MirrorsCategory("Miroirs"))
+        self.addItem(MirrorsCategory("Mirroirs"))
 
     def export(self):
         for i in range(self.count()):
@@ -173,17 +184,24 @@ class SideBar(QListWidget):
 class Window(QWidget):
     def __init__(self):
         QWidget.__init__(self)
-        layout = QHBoxLayout()
+        mainLayout = QHBoxLayout()
 
         self.sidebar = SideBar()
         self.preferencesLayout = QVBoxLayout()
+        
+        btnExport = QPushButton("Exporter")
+        btnExport.clicked.connect(self.sidebar.export)
+        
+        leftLayout = QVBoxLayout()
+        leftLayout.addWidget(self.sidebar)
+        leftLayout.addWidget(btnExport)
 
         self.sidebar.itemSelectionChanged.connect(self.changeMainWidget)
 
-        layout.addWidget(self.sidebar)
-        layout.addLayout(self.preferencesLayout)
-        self.setLayout(layout)
-        self.sidebar.export()
+        mainLayout.addLayout(leftLayout)
+        mainLayout.addLayout(self.preferencesLayout)
+        
+        self.setLayout(mainLayout)
 
     def changeMainWidget(self):
         for i in reversed(range(self.preferencesLayout.count())):
