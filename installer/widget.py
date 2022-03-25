@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 from api import get_mirrors
 
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
+
 
 class Preference(QWidget):
     def __init__(self, title:str):
@@ -22,6 +24,14 @@ class ComboPreference(Preference):
         layout.addWidget(QLabel(title))
         layout.addWidget(self.cbBox)
         self.setLayout(layout)
+
+    def clear(self):
+        self.cbBox.clear()
+
+    def addItem(self, text, data=None):
+        self.cbBox.addItem(text)
+        self.cbBox.setItemData(self.cbBox.count() - 1, data)
+
 
 class TextPreference(Preference):
     def __init__(self, title:str):
@@ -126,10 +136,8 @@ class InitSystemCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
         layout = QVBoxLayout()
-        cb = QComboBox()
-        cb.addItem("OpenRC")
-        cb.addItem("Systemd")
-        layout.addWidget(cb)
+
+        layout.addWidget(ComboPreference("Système d'amorçage", ["OpenRC", "Systemd"]))
 
         self.widget.setLayout(layout)
 
@@ -139,55 +147,53 @@ class MirrorsCategory(Category):
         Category.__init__(self, title)
         layout = QVBoxLayout()
 
-        self.cbRegion = QComboBox()
-        self.cbCountry = QComboBox()
-        self.cbMirror = QComboBox()
-        self.cbUrl = QListWidget()
+        self.RegionPreference = ComboPreference("Region :", [])
+        self.CountryPreference = ComboPreference("Country :", [])
+        self.MirrorPreference = ComboPreference("Mirror :", [])
+        self.listUri = QListWidget()
 
         for region in get_mirrors():
-            self.cbRegion.addItem(region.name)
-            self.cbRegion.setItemData(self.cbRegion.count()-1, region)
+            self.RegionPreference.cbBox.addItem(region.name)
+            self.RegionPreference.cbBox.setItemData(self.RegionPreference.cbBox.count() - 1, region)
 
-        self.cbRegion.currentIndexChanged.connect(self.changeRegion)
-        self.cbCountry.currentIndexChanged.connect(self.changeCountry)
-        self.cbMirror.currentIndexChanged.connect(self.changeMirror)
+        self.RegionPreference.cbBox.currentIndexChanged.connect(self.changeRegion)
+        self.CountryPreference.cbBox.currentIndexChanged.connect(self.changeCountry)
+        self.MirrorPreference.cbBox.currentIndexChanged.connect(self.changeMirror)
 
-        layout.addWidget(self.cbRegion)
-        layout.addWidget(self.cbCountry)
-        layout.addWidget(self.cbMirror)
-        layout.addWidget(self.cbUrl)
+        layout.addWidget(self.RegionPreference)
+        layout.addWidget(self.CountryPreference)
+        layout.addWidget(self.MirrorPreference)
+        layout.addWidget(self.listUri)
 
         self.widget.setLayout(layout)
 
     def changeRegion(self, index):
-        self.cbCountry.clear()
-        countries = self.cbRegion.itemData(index).countries
+        self.CountryPreference.clear()
+        countries = self.RegionPreference.cbBox.itemData(index).countries
         for country in countries:
-            self.cbCountry.addItem(country.name)
-            self.cbCountry.setItemData(self.cbCountry.count() - 1, country)
-        self.cbCountry.setCurrentIndex(-1)
-        self.cbCountry.setCurrentIndex(0)
+            self.CountryPreference.addItem(country.name, country)
+        self.CountryPreference.cbBox.setCurrentIndex(-1)
+        self.CountryPreference.cbBox.setCurrentIndex(0)
 
     def changeCountry(self, index):
-        self.cbMirror.clear()
-        if self.cbCountry.itemData(index) == None:
+        self.MirrorPreference.clear()
+        if self.CountryPreference.cbBox.itemData(index) == None:
             return
-        mirrors = self.cbCountry.itemData(index).mirrors
+        mirrors = self.CountryPreference.cbBox.itemData(index).mirrors
         if mirrors is not None:
             for mirror in mirrors:
-                self.cbMirror.addItem(mirror.name)
-                self.cbMirror.setItemData(self.cbMirror.count() - 1, mirror)
-        self.cbMirror.setCurrentIndex(-1)
-        self.cbMirror.setCurrentIndex(0)
+                self.MirrorPreference.addItem(mirror.name, mirror)
+        self.MirrorPreference.cbBox.setCurrentIndex(-1)
+        self.MirrorPreference.cbBox.setCurrentIndex(0)
 
     def changeMirror(self, index):
-        self.cbUrl.clear()
-        if self.cbMirror.itemData(index) == None:
+        self.listUri.clear()
+        if self.MirrorPreference.cbBox.itemData(index) == None:
             return
-        uris = self.cbMirror.itemData(index).uris
+        uris = self.MirrorPreference.cbBox.itemData(index).uris
         if uris is not None:
             for uri in uris:
-                self.cbUrl.addItem(uri)
+                self.listUri.addItem(uri)
 
 
 
