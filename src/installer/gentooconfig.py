@@ -67,13 +67,15 @@ class GentooConfig:
                 size = int(self.driveconfigparser.get(section, 'size', fallback=-1))
                 filesystem = self.driveconfigparser.get(section, 'filesystem', fallback='')
                 bootable = int(self.driveconfigparser.get(section, 'bootable', fallback=0))
+                biosboot = int(self.driveconfigparser.get(section, 'biosboot', fallback=0))
                 
                 self.partitions.append({
                     'name': name,
                     'mountpoint' : mountpoint,
                     'size' : size,
                     'filesystem' : filesystem,
-                    'bootable': bootable
+                    'bootable': bootable,
+                    'biosboot': biosboot
                 })
         
     def load_gentoo_config(self):
