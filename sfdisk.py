@@ -31,7 +31,7 @@ class SFDisk:
     def addpart(self, name:str, size:int=-1, bootable:bool=False, **kwargs) -> str:
         """returns the drive path in dev as a string"""
         leftspace = self.disksize - self.useddisk
-        if leftspace < 0:
+        if leftspace <= 0:
             raise ArgumentError("Partition is larger than the amount of disk space left")
         
         # if size is not specified use the rest
@@ -44,7 +44,10 @@ class SFDisk:
         device = f"{self.device}{devid}"
         newpart = SFDisk.Partition(name, device=device, start=self.useddisk, size=rsize, bootable=bootable)
         self.partitions.append(newpart)
-        self.useddisk += rsize
+        
+        # in case no size was specified just mark the rest of the disk as used
+        newlyused = rsize if rsize >= 0 else leftspace
+        self.useddisk += newlyused
         
         return device
             
