@@ -106,7 +106,6 @@ class LocalisationCategory(Category):
         lang = self.langCombo.cbBox.currentText()
         keyboard = self.keyboardCombo.cbBox.currentText()
         conf = ConfigGenerator(file, 'locale', {'lang':lang, 'keyboard':keyboard})
-        
         conf.generate()
 
 class PartitionWidget(Preference):
@@ -204,12 +203,23 @@ class PartitionCategory(Category):
 class InitSystemCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
+        
+        self.initSystemPref = ComboPreference("Système d'amorçage", ["openrc", "systemd"])
+        self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
+
         layout = QVBoxLayout()
-
-        layout.addWidget(ComboPreference("Système d'amorçage", ["OpenRC", "Systemd"]))
-
+        layout.addWidget(self.initSystemPref)
+        layout.addWidget(self.archPref)
         self.widget.setLayout(layout)
 
+    def export(self):
+        super().export()
+        file = open('installer/initsystem.conf', 'w')
+        
+        arch = self.archPref.cbBox.currentText()
+        initsystem = self.initSystemPref.cbBox.currentText()
+        conf = ConfigGenerator(file, 'gentoo', {'arch':arch, 'initsystem':initsystem})
+        conf.generate()
 
 class MirrorsCategory(Category):
     def __init__(self, title):
