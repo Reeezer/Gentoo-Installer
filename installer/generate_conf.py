@@ -22,6 +22,7 @@ if __name__ == '__main__':
     confs.append(ConfigGenerator(file1, 'portage', {'profile':'default/linux/amd64/17.1'}))
     confs.append(ConfigGenerator(file1, 'timezone', {'profile':'Europe/Zurich'}))
     confs.append(ConfigGenerator(file1, 'kernel', {'config':'distkernel', 'distkernel':'gentoo-kernel-bin'}))
+    confs.append(ConfigGenerator(file1, 'locale', {'lang':'en_CA.UTF8', 'keyboard':'fr'}))
     
     confs.append(ConfigGenerator(file2, 'general', {'unit':'MiB', 'drive':'/dev/sda'}))
     confs.append(ConfigGenerator(file2, 'boot', {'start':'2', 'size':'200', 'mountpoint':'/boot', 'filesystem':'ext2'}))

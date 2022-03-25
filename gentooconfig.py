@@ -31,6 +31,7 @@ class GentooConfig:
         
         self.setup_partitions()
         
+        self.act_network()
         self.act_disks()
         self.act_stage3()
         self.act_basesystem()
@@ -107,9 +108,9 @@ class GentooConfig:
 
     # main install actions
 
-    # no network for now    
-    # def act_network():
-    #     pass
+    def act_network(self):
+        self.baseshell.add_comment("network", space=True)
+        self.ntp_sync()
     
     def act_disks(self):
         self.baseshell.add_comment("disks and partitions", space=True)
@@ -140,7 +141,7 @@ class GentooConfig:
     
     def act_sysconfig(self):
         self.chrootshell.add_comment("system config", space=True)
-        # TODO
+        self.generate_fstab()
     
     def act_systools(self):
         self.chrootshell.add_comment("system tools", space=True)
@@ -153,7 +154,13 @@ class GentooConfig:
     def act_finalize(self):
         self.chrootshell.add_comment("finalize", space=True)
         # TODO
-
+        
+    ## network
+    
+    def ntp_sync(self):
+        self.baseshell.add_comment("synchronize time using NTP")
+        self.baseshell.add_command("ntpd -g -q")
+        
     ## disks
 
     def partition_drive(self):
@@ -275,6 +282,8 @@ class GentooConfig:
     def install_modprobe_files(self):
         pass # TODO
     
+    def generate_fstab(self):
+        pass
     
         
         
