@@ -23,6 +23,38 @@ class ComboPreference(Preference):
         layout.addWidget(self.cbBox)
         self.setLayout(layout)
 
+class TextPreference(Preference):
+    def __init__(self, title:str):
+        Preference.__init__(self, title)
+        layout = QHBoxLayout()
+        self.lineEdit = QLineEdit()
+
+        layout.addWidget(QLabel(title))
+        layout.addWidget(self.lineEdit)
+        self.setLayout(layout)
+
+class IntPreference(Preference):
+    def __init__(self, title:str):
+        Preference.__init__(self, title)
+        layout = QHBoxLayout()
+        self.spinbox = QSpinBox()
+
+        layout.addWidget(QLabel(title))
+        layout.addWidget(self.spinbox)
+        self.setLayout(layout)
+
+class CheckPreference(Preference):
+    def __init__(self, title:str):
+        Preference.__init__(self, title)
+        layout = QHBoxLayout()
+        self.checkbox = QCheckBox()
+
+        layout.addWidget(QLabel(title))
+        layout.addWidget(self.checkbox)
+        self.setLayout(layout)
+
+
+
 
 class Category(QListWidgetItem):
     def __init__(self, title:str):
@@ -49,12 +81,11 @@ class PartitionWidget(Preference):
         layout = QVBoxLayout()
 
         layout.addWidget(QLabel(title))
-        layout.addWidget(QLabel("name"))
-        layout.addWidget(QLineEdit())
-        layout.addWidget(QLabel("begin at"))
-        layout.addWidget(QLineEdit())
-        layout.addWidget(QLabel("size"))
-        layout.addWidget(QLineEdit())
+        layout.addWidget(TextPreference("Start"))
+        layout.addWidget(IntPreference("Size"))
+        layout.addWidget(TextPreference("Mount point"))
+        layout.addWidget(TextPreference("File system"))
+        layout.addWidget(CheckPreference("Bootable"))
         self.setLayout(layout)
 
 
@@ -71,6 +102,9 @@ class PartitionCategory(Category):
         btnDelete = QPushButton("Supprimer")
         btnDelete.clicked.connect(self.deletePartition)
 
+        layout.addWidget(IntPreference("Size"))
+        layout.addWidget(TextPreference("Drive"))
+        layout.addWidget(ComboPreference("Label", ["gpt", "dos"]))
         layout.addWidget(btnAdd)
         layout.addWidget(btnDelete)
         self.partitionsLayout = QHBoxLayout()
