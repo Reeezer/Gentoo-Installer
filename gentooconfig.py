@@ -43,17 +43,40 @@ class GentooConfig:
     # config
     
     def load_config(self):
-        # read the config from the file
-        self.sysconfigparser.read(self.sysconfigpath)
+        self.load_gentoo_config()
+        self.load_disks_config()
+        
+    def load_disks_config(self):
         self.driveconfigparser.read(self.driveconfigpath)
         
-        self.arch = self.sysconfigparser.get('gentoo', 'arch', fallback='amd64')
+        self.partitions = []
+        
+        for section in self.driveconfigparser.sections():
+            if section == 'general':
+                self.drive = self.driveconfigparser.get('general', 'drive', fallback='/dev/sda')
+                self.drivesize = self.driveconfigparser.getint('general', 'size', fallback=8192)
+                self.drivelabel = self.driveconfigparser.get('general', 'label', fallback='gpt')
+            else:
+                name = section
+                mountpoint = self.driveconfigparser.get(section, 'mountpoint', fallback='') # fallback = no mountpoint, e.g. swap
+                size = int(self.driveconfigparser.get(section, 'size', fallback=-1))
+                filesystem = self.driveconfigparser.get(section, 'filesystem', fallback='')
+                bootable = int(self.driveconfigparser.get(section, 'bootable', fallback=0))
+                
+                self.partitions.append({
+                    'name': name,
+                    'mountpoint' : mountpoint,
+                    'size' : size,
+                    'filesystem' : filesystem,
+                    'bootable': bootable
+                })
+        
+    def load_gentoo_config(self):
+        self.sysconfigparser.read(self.sysconfigpath)
+            
+        self.architecture = self.sysconfigparser.get('gentoo', 'arch', fallback='amd64')
         self.initsystem = self.sysconfigparser.get('gentoo', 'initsystem', fallback='openrc')
         # TODO add EFI/BIOS option
-        
-        self.drive = self.sysconfigparser.get('drive', 'drive', fallback='/dev/sda')
-        self.drivesize = self.sysconfigparser.getint('drive', 'size', fallback=8192)
-        self.drivelabel = self.sysconfigparser.get('drive', 'label', fallback='gpt')
         
         # TODO allow using this in make.conf
         self.mirror = self.sysconfigparser.get('mirror', 'url', fallback="https://mirror.init7.net") # FIXME find a better default mirror, see if it's possible to use gentoo's bouncer
@@ -66,17 +89,8 @@ class GentooConfig:
         self.distkernel_package = self.sysconfigparser.get('kernel', 'distkernel', fallback='kernel-gentoo-bin')
 
         # generate additional config
-        
-        self.mirror_base_url = f"{self.mirror}/gentoo/releases/{self.arch}/autobuilds"
-        self.latest_stage3_url = f"{self.mirror_base_url}/latest-stage3-{self.arch}-{self.initsystem}.txt"
-        
-        # FIXME use actual config
-        self.partitions = [
-            { "name" : "grub", "mountpoint" : "",               "size" :    2, "bootable" : False,  "filesystem" : ""}, # FIXME honestly not sure how to use that partition, should it be bootable?
-            { "name" : "boot", "mountpoint" : "/boot",          "size" :  200, "bootable" : True , "filesystem" : "ext2"},
-            { "name" : "root", "mountpoint" : "/",              "size" :   -1, "bootable" : False, "filesystem" : "ext4"},
-        ]
-        
+        self.mirror_base_url = f"{self.mirror}/gentoo/releases/{self.architecture}/autobuilds"
+        self.latest_stage3_url = f"{self.mirror_base_url}/latest-stage3-{self.architecture}-{self.initsystem}.txt"
         
     # pre-install setup (like variables and needed generated files)
 
