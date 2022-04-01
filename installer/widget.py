@@ -107,7 +107,7 @@ class LocalisationCategory(Category):
         Category.__init__(self, title)
         self.langCombo = ComboPreference("Langue", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
         self.keyboardCombo = ComboPreference("Clavier", ["fr", "azerty"])
-        self.timeZoneCombo = ComboPreference("TimeZone", ["Europe/Berlin", "Europe/Londre"])
+        self.timeZoneCombo = ComboPreference("TimeZone", ["Europe/Berlin", "Europe/Londres"])
         
         layout = QVBoxLayout()
         layout.addWidget(self.langCombo)
@@ -222,12 +222,23 @@ class PartitionCategory(Category):
 class InitSystemCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
+        
+        self.initSystemPref = ComboPreference("Système d'amorçage", ["openrc", "systemd"])
+        self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
+
         layout = QVBoxLayout()
-
-        layout.addWidget(ComboPreference("Système d'amorçage", ["OpenRC", "Systemd"]))
-
+        layout.addWidget(self.initSystemPref)
+        layout.addWidget(self.archPref)
         self.widget.setLayout(layout)
 
+    def export(self):
+        super().export()
+        file = open('installer/initsystem.conf', 'w')
+        
+        arch = self.archPref.cbBox.currentText()
+        initsystem = self.initSystemPref.cbBox.currentText()
+        conf = ConfigGenerator(file, 'gentoo', {'arch':arch, 'initsystem':initsystem})
+        conf.generate()
 
 class MirrorsCategory(Category):
     def __init__(self, title):
@@ -281,6 +292,19 @@ class MirrorsCategory(Category):
         if uris is not None:
             for uri in uris:
                 self.listUri.addItem(uri)
+
+    def export(self):
+        super().export()
+        file = open('installer/mirros.conf', 'w')
+
+        urlItem = self.listUri.currentItem()
+        if urlItem is not None:
+            url = self.listUri.currentItem().text()
+        else:
+            url = 'None'
+        conf = ConfigGenerator(file, 'mirrors', {'url': url})
+        conf.generate()
+
 
 class UseFlagCategory(Category):
     def __init__(self, title):

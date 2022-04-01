@@ -3,6 +3,7 @@ from configparser import ConfigParser
 from shellwriter import ShellWriter
 from sfdisk import SFDisk
 from mount import Mount
+from fstab import FSTab
 
 class GentooConfig:
     """Configuration class for Gentoo
@@ -105,6 +106,11 @@ class GentooConfig:
                 
         with open("disks.sfdisk", "w") as sfconfig:
             sfconfig.write(sfdisk.dumpsconfig())
+        
+        fstab = FSTab(self.partitions)
+        with open("fstab.txt", "w") as fstabfile:
+            fstabfile.write(fstab.dumps())
+            
 
     # main install actions
 
@@ -124,6 +130,7 @@ class GentooConfig:
 
         self.download_stage3()
         self.untar_stage3()
+        self.populate_fstab() # needs to be done before chrooting
     
     def act_basesystem(self):
         self.baseshell.add_comment("base system", space=True)
@@ -141,7 +148,7 @@ class GentooConfig:
     
     def act_sysconfig(self):
         self.chrootshell.add_comment("system config", space=True)
-        self.generate_fstab()
+        
     
     def act_systools(self):
         self.chrootshell.add_comment("system tools", space=True)
@@ -206,6 +213,10 @@ class GentooConfig:
         self.baseshell.add_comment("untar stage3")
         
         self.baseshell.add_command(f"tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner --directory /mnt/gentoo")
+
+    def populate_fstab(self):
+        self.baseshell.add_comment("append the proper drive config to the fstab file")
+        self.baseshell.add_command("cat fstab.txt >> /mnt/gentoo/etc/fstab")
 
     # base system
     
@@ -281,9 +292,6 @@ class GentooConfig:
                 
     def install_modprobe_files(self):
         pass # TODO
-    
-    def generate_fstab(self):
-        pass
     
         
         
