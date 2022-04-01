@@ -2,7 +2,7 @@ from abc import abstractmethod
 from turtle import left
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, QUrl, QSize, QTimer
+from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QObject
 from api import get_mirrors
 
 from generate_conf import ConfigGenerator
@@ -137,32 +137,59 @@ class PartitionWidget(Preference):
         layout = QVBoxLayout()
         widget = QWidget()
         
-        self.label = QLabel(title)
-        self.startPref = IntPreference("Start")
+        self.namePref = TextPreference("Name")
         self.sizePref = IntPreference("Size")
         self.mountPointPref = TextPreference("Mount point")
-        self.fileSystemPref = TextPreference("File system")
+        self.fileSystemPref = ComboPreference("File system", ["btrfs", "ext4", "f2f", "jfs", "reiserfs", "xfs", "vfat", "ntfs", "swap"]) #
         self.bootablePref = CheckPreference("Bootable")
+        self.biosbootPref = CheckPreference("BiosBoot")
 
-        layout.addWidget(self.label)
-        layout.addWidget(self.startPref)
+        layout.addWidget(self.namePref)
         layout.addWidget(self.sizePref)
         layout.addWidget(self.mountPointPref)
         layout.addWidget(self.fileSystemPref)
         layout.addWidget(self.bootablePref)
+        layout.addWidget(self.biosbootPref)
         
         self.setLayout(layout)
+
+        self.setParent(None)
+
+        btnDelete = QPushButton("Supprimer")
+        btnDelete.clicked.connect(self.delete)
+        layout.addWidget(btnDelete)
+
+    def delete(self):
+        self.setParent(None)
+
+    def export(self):
+        name = self.namePref.lineEdit.text()
+        size = self.sizePref.spinbox.value()
+        mountpoint = self.mountPointPref.lineEdit.text()
+        filesystem = self.fileSystemPref.cbBox.currentText()
+        bootable = self.bootablePref.checkbox.isChecked()
+
+        attributes = {}
+        attributes['name'] = name
+        if size > 0:
+            attributes['size'] = size
+        if bootable:
+            attributes['bootable'] = bootable
+        attributes['mountpoint'] = mountpoint
+        attributes['filesystem'] = filesystem
+
+        file = open('installer/partitions.conf', 'a')
+        conf = ConfigGenerator(file, name, attributes)
+        conf.generate()
+
 
 class PartitionCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
         layout = QVBoxLayout()
-        self.partitions = []
 
         btnAdd = QPushButton("Add")
         btnAdd.clicked.connect(self.addPartition)
-        btnDelete = QPushButton("Remove")
-        btnDelete.clicked.connect(self.deletePartition)
         
         self.generalSizePref = IntPreference("Size")
         self.generalDrivePref = TextPreference("Drive")
@@ -172,7 +199,6 @@ class PartitionCategory(Category):
         layout.addWidget(self.generalDrivePref)
         layout.addWidget(self.generalLabelPref)
         layout.addWidget(btnAdd)
-        layout.addWidget(btnDelete)
         
         self.partitionsLayout = QVBoxLayout()
         
@@ -190,47 +216,21 @@ class PartitionCategory(Category):
         self.widget.setLayout(layout)
 
     def addPartition(self):
-        partition = PartitionWidget(f"Partition {len(self.partitions)}")
-        self.partitions.append(partition)
+        partition = PartitionWidget(f"partition")
         self.partitionsLayout.addWidget(partition)
 
-    def deletePartition(self):
-        self.partitions[-1].setParent(None)
-        self.partitions.pop(-1)
-        
     def export(self):
         super().export()
-        file = open('installer/partitions.conf', 'w')
-        confs = list()
-        
-        # General 
         size = self.generalSizePref.spinbox.value()
         drive = self.generalDrivePref.lineEdit.text()
-        label = self.generalLabelPref.cbBox.currentText()
-        confs.append(ConfigGenerator(file, 'general', {'size':size, 'label':label, 'drive': drive}))
-        
-        # Each partition
-        i = 0
-        for partition in self.partitions:
-            start = partition.startPref.spinbox.value()
-            size = partition.sizePref.spinbox.value()
-            mountpoint = partition.mountPointPref.lineEdit.text()
-            filesystem = partition.fileSystemPref.lineEdit.text()
-            bootable = partition.bootablePref.checkbox.isChecked()
-            
-            attributes = dict()
-            if start > 0:
-                attributes['start'] = start
-            if size > 0:
-                attributes['size'] = size
-            if bootable:
-                attributes['bootable'] = bootable
-            attributes['mountpoint'] = mountpoint
-            attributes['filesystem'] = filesystem
-            confs.append(ConfigGenerator(file, f"partition{i}", attributes))
-            i += 1
-        
-        [conf.generate() for conf in confs]
+
+        file = open('installer/partitions.conf', 'w')
+        conf = ConfigGenerator(file, 'general', {'size': size, 'drive': drive})
+        conf.generate()
+        file.close()
+
+        for i in range(self.partitionsLayout.count()):
+            self.partitionsLayout.itemAt(i).widget().export()
 
 
 class InitSystemCategory(Category):
@@ -399,3 +399,15 @@ class Window(QWidget):
         for i in reversed(range(self.preferencesLayout.count())):
             self.preferencesLayout.itemAt(i).widget().setParent(None)
         self.preferencesLayout.addWidget(self.sidebar.selectedItems()[0].widget)
+
+
+
+# config --> kconfig, genkernel, distkernel
+# distkernel --> gentoo-kernel gentoo-kernel-bin
+
+
+# locker --> sysklogd, syslog-ng, metalog
+# cron --> bcron dcron fcron cronie
+
+# mode --> bios efi
+# bootloader --> grub, lilo, efibootmgr
