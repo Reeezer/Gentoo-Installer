@@ -276,14 +276,14 @@ class MirrorsCategory(Category):
 
     def export(self):
         super().export()
-        file = open('installer/mirros.conf', 'w')
+        file = open('installer/mirrors.conf', 'w')
         
         urlItem = self.listUri.currentItem()
         if urlItem is not None:
             url = self.listUri.currentItem().text()
         else: 
             url = 'None'
-        conf = ConfigGenerator(file, 'mirrors', {'url':url})
+        conf = ConfigGenerator(file, 'mirror', {'url':url})
         conf.generate()
 
 class SideBar(QListWidget):
