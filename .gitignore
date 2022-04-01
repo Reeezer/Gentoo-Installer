@@ -1,8 +1,7 @@
 __pycache__/
 .idea/
-install/
+autogen/
 install.tar.gz
 
-install.sh
-chroot.sh
-disks.sfdisk
+config/disks.conf
+config/installer.conf

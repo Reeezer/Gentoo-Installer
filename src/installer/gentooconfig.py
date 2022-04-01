@@ -1,20 +1,24 @@
 from configparser import ConfigParser
+import os
 
 from shellwriter import ShellWriter
 from sfdisk import SFDisk
 from mount import Mount
+from fstab import FSTab
 
 class GentooConfig:
     """Configuration class for Gentoo
     
     All install actions begin with act_ and are mapped to the handbook sections
     """
+    OUTPUT_DIR = "autogen"
+    
     
     # FIXME currently it is only possible to install to a single drive
     
     def __init__(self, sysconfigpath, driveconfigpath):
-        self.baseshell = ShellWriter('install.sh')  # prepares the disks and 
-        self.chrootshell = ShellWriter('chroot.sh') # system install inside the chroot
+        self.baseshell = ShellWriter(os.path.join(GentooConfig.OUTPUT_DIR, 'install.sh'))  # prepares the disks and 
+        self.chrootshell = ShellWriter(os.path.join(GentooConfig.OUTPUT_DIR, 'chroot.sh')) # system install inside the chroot
         
         self.sysconfigparser = ConfigParser()
         self.sysconfigpath = sysconfigpath
@@ -63,13 +67,15 @@ class GentooConfig:
                 size = int(self.driveconfigparser.get(section, 'size', fallback=-1))
                 filesystem = self.driveconfigparser.get(section, 'filesystem', fallback='')
                 bootable = int(self.driveconfigparser.get(section, 'bootable', fallback=0))
+                biosboot = int(self.driveconfigparser.get(section, 'biosboot', fallback=0))
                 
                 self.partitions.append({
                     'name': name,
                     'mountpoint' : mountpoint,
                     'size' : size,
                     'filesystem' : filesystem,
-                    'bootable': bootable
+                    'bootable': bootable,
+                    'biosboot': biosboot
                 })
         
     def load_gentoo_config(self):
@@ -89,6 +95,15 @@ class GentooConfig:
         self.kernel_configmode = self.sysconfigparser.get('kernel', 'config', fallback='distkernel')
         self.distkernel_package = self.sysconfigparser.get('kernel', 'distkernel', fallback='kernel-gentoo-bin')
 
+        self.hostname = self.sysconfigparser.get('system', 'hostname', fallback='gentoo')
+        self.logger = self.sysconfigparser.get('system', 'logger', fallback='sysklogd')
+        self.cron = self.sysconfigparser.get('system', 'cron', fallback='cronie')
+        
+        # FIXME it might be better to use EFI on a real system nowadays
+        self.bootmode = self.sysconfigparser.get('boot', 'mode', fallback='bios')
+        # FIXME might collide with systemd
+        self.bootloader = self.sysconfigparser.get('boot', 'bootloader', fallback='grub')
+
         # generate additional config
         self.mirror_base_url = f"{self.mirror}/gentoo/releases/{self.architecture}/autobuilds"
         self.latest_stage3_url = f"{self.mirror_base_url}/latest-stage3-{self.architecture}-{self.initsystem}.txt"
@@ -103,8 +118,13 @@ class GentooConfig:
             # addpart returns the drive string
             partition['drive'] = sfdisk.addpart(**partition)
                 
-        with open("disks.sfdisk", "w") as sfconfig:
+        with open(os.path.join(GentooConfig.OUTPUT_DIR, "disks.sfdisk"), "w") as sfconfig:
             sfconfig.write(sfdisk.dumpsconfig())
+        
+        fstab = FSTab(self.partitions)
+        with open(os.path.join(GentooConfig.OUTPUT_DIR, "fstab.txt"), "w") as fstabfile:
+            fstabfile.write(fstab.dumps())
+            
 
     # main install actions
 
@@ -124,6 +144,7 @@ class GentooConfig:
 
         self.download_stage3()
         self.untar_stage3()
+        self.populate_fstab() # needs to be done before chrooting
     
     def act_basesystem(self):
         self.baseshell.add_comment("base system", space=True)
@@ -137,23 +158,31 @@ class GentooConfig:
     
     def act_kernel(self):
         self.chrootshell.add_comment("kernel", space=True)
+        
         self.install_kernel()
     
     def act_sysconfig(self):
         self.chrootshell.add_comment("system config", space=True)
-        self.generate_fstab()
-    
+        
+        self.set_hostname()
+        self.setup_systemnetwork()
+        self.setup_users()
+
     def act_systools(self):
         self.chrootshell.add_comment("system tools", space=True)
-        # TODO
+        
+        self.setup_sysutils()
     
     def act_bootloader(self):
         self.chrootshell.add_comment("bootloader", space=True)
-        # TODO
+        
+        self.setup_bootloader()
     
     def act_finalize(self):
-        self.chrootshell.add_comment("finalize", space=True)
-        # TODO
+        self.baseshell.add_comment("finalize", space=True)
+        
+        self.unmount_chroot()
+        self.figlet_done()
         
     ## network
     
@@ -206,6 +235,10 @@ class GentooConfig:
         self.baseshell.add_comment("untar stage3")
         
         self.baseshell.add_command(f"tar xpvf stage3-*.tar.xz --xattrs-include='*.*' --numeric-owner --directory /mnt/gentoo")
+
+    def populate_fstab(self):
+        self.baseshell.add_comment("append the proper drive config to the fstab file")
+        self.baseshell.add_command("cat fstab.txt >> /mnt/gentoo/etc/fstab")
 
     # base system
     
@@ -282,13 +315,81 @@ class GentooConfig:
     def install_modprobe_files(self):
         pass # TODO
     
-    def generate_fstab(self):
-        pass
+    def set_hostname(self):
+        self.chrootshell.add_comment("set hostname")
+        
+        if self.initsystem == 'openrc':
+            hostfilepath = '/etc/conf.d/hostname'
+            self.chrootshell.add_command(f'echo "# Set the hostname variable to the selected host name" > {hostfilepath}')
+            self.chrootshell.add_command(f'echo "hostname=\\"{self.hostname}\\"" >> {hostfilepath}')
+        elif self.initsystem == 'systemd':
+            self.chrootshell.add_command(f'hostnamectl hostname {self.hostname}')
     
+    def setup_systemnetwork(self):
+        self.chrootshell.add_comment("network")
         
+        self.chrootshell.add_command("emerge net-misc/dhcpcd")
+        if self.initsystem == 'openrc':
+            self.chrootshell.add_command("rc-update add dhcpcd default")
+            self.chrootshell.add_command("root #rc-service dhcpcd start")
+        elif self.initsystem == 'systemd':
+            self.chrootshell.add_command("systemctl enable --now dhcpcd")
         
+        # FIXME wireless support        
+            
+    def setup_users(self):
+        self.chrootshell.add_comment("IMPORTANT: root password empty by default")
+        self.chrootshell.add_command("passwd -d root")
+        
+    def setup_sysutils(self):
+        self.chrootshell.add_comment("logger")
+        # systemd has its own logger
+        if self.initsystem == 'openrc':
+            self.chrootshell.add_command(f"emerge app-admin/{self.logger}")
+            self.chrootshell.add_command(f"rc-update add {self.logger} default") # FIXME check if package name is the same as service name
+        
+        self.chrootshell.add_comment("crond")
+        self.chrootshell.add_command(f"emerge sys-process/{self.cron}")
+        if self.initsystem == 'openrc':
+            self.chrootshell.add_command(f"rc-update add {self.cron} default") # FIXME check if package name matches service name
+        elif self.initsystem == 'systemd':
+            self.chrootshell.add_command(f"systemctl enable {self.cron}")
+        if self.cron == 'dcron':
+            self.chrootshell.add_command("crontab /etc/crontab")
+        elif self.cron == 'fcron':
+            self.chrootshell.add_command("emerge --config sys-process/fcron")
+        
+        self.chrootshell.add_comment("additional utils")
+        # FIXME make it optional on install
+        self.chrootshell.add_command("emerge sys-apps/mlocate")
+        # FIXME make it possible to install sshd
+        
+    def setup_bootloader(self):
+        self.chrootshell.add_comment("install the bootloader")
+        
+        self.chrootshell.add_command(f"emerge sys-boot/{self.bootloader}")
+    
+        if self.bootloader == 'grub':    
+            if self.bootmode == 'bios':
+                self.chrootshell.add_command(f"grub-install {self.drive}")
+            elif self.bootmode == 'efi':
+                # FIXME with --removable in case of errors ?
+                self.chrootshell.add_command(f"grub-install --target=x86_64-efi --efi-directory=/boot")
+        
+            self.chrootshell.add_command("grub-mkconfig -o /boot/grub/grub.cfg")
+        # FIXME add support for additional bootloaders
+        
+    def unmount_chroot(self):
+        self.baseshell.add_comment("unmount all filesystems")
+        
+        self.baseshell.add_command("umount -l /mnt/gentoo/dev{/shm,/pts,}") # FIXME what does this do?
+        self.baseshell.add_command("umount -R /mnt/gentoo") 
+        
+    def figlet_done(self):
+        self.baseshell.add_comment("display a nice message to the user")
+        self.baseshell.add_command("cat done.txt")
 
 if __name__ == '__main__':
-    genconfig = GentooConfig(sysconfigpath='installer.conf', driveconfigpath='disks.conf')
+    genconfig = GentooConfig(sysconfigpath='config/installer.conf', driveconfigpath='config/disks.conf')
     genconfig.genconfig()
     genconfig.finalize()

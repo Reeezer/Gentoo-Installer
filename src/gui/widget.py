@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 from api import get_mirrors
 
 from generate_conf import ConfigGenerator
@@ -49,6 +49,20 @@ class TextPreference(Preference):
         
         self.setLayout(layout)
 
+
+class LargeTextPreference(Preference):
+    def __init__(self, title: str):
+        Preference.__init__(self, title)
+
+        self.textEdit = QTextEdit()
+        label = QLabel(title)
+
+        layout = QHBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(self.textEdit)
+
+        self.setLayout(layout)
+
 class IntPreference(Preference):
     def __init__(self, title:str):
         Preference.__init__(self, title)
@@ -93,10 +107,12 @@ class LocalisationCategory(Category):
         Category.__init__(self, title)
         self.langCombo = ComboPreference("Langue", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
         self.keyboardCombo = ComboPreference("Clavier", ["fr", "azerty"])
+        self.timeZoneCombo = ComboPreference("TimeZone", ["Europe/Berlin", "Europe/Londres"])
         
         layout = QVBoxLayout()
         layout.addWidget(self.langCombo)
         layout.addWidget(self.keyboardCombo)
+        layout.addWidget(self.timeZoneCombo)
         self.widget.setLayout(layout)
         
     def export(self):
@@ -106,6 +122,9 @@ class LocalisationCategory(Category):
         lang = self.langCombo.cbBox.currentText()
         keyboard = self.keyboardCombo.cbBox.currentText()
         conf = ConfigGenerator(file, 'locale', {'lang':lang, 'keyboard':keyboard})
+        conf.generate()
+        timezone = self.timeZoneCombo.cbBox.currentText()
+        conf = ConfigGenerator(file, 'timezone', {'timezone': timezone})
         conf.generate()
 
 class PartitionWidget(Preference):
@@ -281,10 +300,25 @@ class MirrorsCategory(Category):
         urlItem = self.listUri.currentItem()
         if urlItem is not None:
             url = self.listUri.currentItem().text()
-        else: 
+        else:
             url = 'None'
         conf = ConfigGenerator(file, 'mirror', {'url':url})
         conf.generate()
+
+
+class UseFlagCategory(Category):
+    def __init__(self, title):
+        Category.__init__(self, title)
+        layout = QVBoxLayout()
+
+        layout.addWidget(LargeTextPreference("Use Falgs"))
+        urlLink = "<a href=\"https://www.gentoo.org/support/use-flags/\">See use flags available</a>"
+        label = QLabel(urlLink)
+        label.setOpenExternalLinks(True)
+        layout.addWidget(label)
+
+        self.widget.setLayout(layout)
+
 
 class SideBar(QListWidget):
     def __init__(self):
@@ -293,6 +327,7 @@ class SideBar(QListWidget):
         self.addItem(PartitionCategory("Partitions"))
         self.addItem(InitSystemCategory("Système d'amorçage"))
         self.addItem(MirrorsCategory("Mirroirs"))
+        self.addItem(UseFlagCategory("Use flags"))
 
     def export(self):
         for i in range(self.count()):
