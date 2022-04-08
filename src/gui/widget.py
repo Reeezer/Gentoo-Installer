@@ -12,25 +12,34 @@ from generate_conf import ConfigGenerator
 from styles import styles
 
 class Preference(QWidget):
-    def __init__(self, title:str):
-        QWidget.__init__(self)
+    def __init__(self, title: str, layout: QLayout = None):
+        super().__init__()
+        self.layout = layout
         self.title = title
         self.setFixedWidth(300)
+        self.setLayout(layout)
+
+        self.addWidget(QLabel(title))
+
+    def addWidget(self, widget:QWidget):
+        if self.layout is None:
+            super().addWidget(widget)
+        else:
+            self.layout.addWidget(widget)
+
+    def getValue(self):
+        print(self.title + "AbstractMethode")
+
+
 
 class ComboPreference(Preference):
     def __init__(self, title:str, choices:list):
-        Preference.__init__(self, title)
+        super().__init__(title, QHBoxLayout())
         
         self.cbBox = QComboBox()
         [self.cbBox.addItem(choice) for choice in choices]
-        
-        label = QLabel(title)
 
-        layout = QHBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(self.cbBox)
-        
-        self.setLayout(layout)
+        self.addWidget(self.cbBox)
 
     def clear(self):
         self.cbBox.clear()
@@ -39,105 +48,92 @@ class ComboPreference(Preference):
         self.cbBox.addItem(text)
         self.cbBox.setItemData(self.cbBox.count() - 1, data)
 
+    def connectChange(self, slot):
+        self.cbBox.currentIndexChanged.connect(slot)
+
+    def getValue(self):
+        return self.cbBox.currentText()
+
 
 class TextPreference(Preference):
     def __init__(self, title:str):
-        Preference.__init__(self, title)
+        super().__init__(title, QHBoxLayout())
         
         self.lineEdit = QLineEdit()
-        label = QLabel(title)
-
-        layout = QHBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(self.lineEdit)
+        self.addWidget(self.lineEdit)
         
         self.lineEdit.setFixedWidth(200)
-        
-        self.setLayout(layout)
 
+    def getValue(self):
+        return self.lineEdit.text()
 
-class LargeTextPreference(Preference):
-    def __init__(self, title: str):
-        Preference.__init__(self, title)
-
-        self.textEdit = QTextEdit()
-        label = QLabel(title)
-
-        layout = QHBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(self.textEdit)
-
-        self.setLayout(layout)
 
 class IntPreference(Preference):
     def __init__(self, title:str):
-        Preference.__init__(self, title)
+        super().__init__(title, QHBoxLayout())
         
         self.spinbox = QSpinBox()
-        label = QLabel(title)
+        self.addWidget(self.spinbox)
 
-        layout = QHBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(self.spinbox)
-        
-        self.setLayout(layout)
+    def getValue(self):
+        return self.spinbox.value()
+
 
 class CheckPreference(Preference):
     def __init__(self, title:str):
-        Preference.__init__(self, title)
+        super().__init__(title, QHBoxLayout())
         
         self.checkbox = QCheckBox()
-        label = QLabel(title)
+        self.addWidget(self.checkbox)
 
-        layout = QHBoxLayout()
-        layout.addWidget(label)
-        layout.addWidget(self.checkbox)
-        
-        self.setLayout(layout)
+    def getValue(self):
+        return self.checkbox.isChecked()
 
 
 
 
 class Category(QListWidgetItem):
-    def __init__(self, title:str):
+    def __init__(self, title:str, layout: QLayout = None):
         QListWidgetItem.__init__(self, title)
         self.widget = QWidget()
+        self.widget.setLayout(layout)
         self.widget.setObjectName("category")    
         self.title = title
+        self.layout = layout
         
     def export(self):
-        print(self.title)
+        raise NotImplementedError
+
+    def addWidget(self, widget: QWidget):
+        if self.layout is None:
+            self.widget.addWidget(widget)
+        else:
+            self.layout.addWidget(widget)
 
 
 class LocalisationCategory(Category):
     def __init__(self, title):
-        Category.__init__(self, title)
+        super().__init__(title, QVBoxLayout())
         self.langCombo = ComboPreference("Language", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
         self.keyboardCombo = ComboPreference("Keyboard", ["fr", "azerty"])
         self.timeZoneCombo = ComboPreference("TimeZone", ["Europe/Berlin", "Europe/Londres"])
-        
-        layout = QVBoxLayout()
-        layout.addWidget(self.langCombo)
-        layout.addWidget(self.keyboardCombo)
-        layout.addWidget(self.timeZoneCombo)
-        self.widget.setLayout(layout)
+
+        self.addWidget(self.langCombo)
+        self.addWidget(self.keyboardCombo)
+        self.addWidget(self.timeZoneCombo)
         
     def export(self):
-        super().export()
-        
-        lang = self.langCombo.cbBox.currentText()
-        keyboard = self.keyboardCombo.cbBox.currentText()
+        lang = self.langCombo.getValue()
+        keyboard = self.keyboardCombo.getValue()
         conf = ConfigGenerator(fileInstallerConf, 'locale', {'lang':lang, 'keyboard':keyboard})
         conf.generate()
-        timezone = self.timeZoneCombo.cbBox.currentText()
+        timezone = self.timeZoneCombo.getValue()
         conf = ConfigGenerator(fileInstallerConf, 'timezone', {'timezone': timezone})
         conf.generate()
 
 class PartitionWidget(Preference):
     def __init__(self, title):
-        Preference.__init__(self, title)
-        layout = QVBoxLayout()
-        widget = QWidget()
+        super().__init__(title, QVBoxLayout())
         
         self.namePref = TextPreference("Name")
         self.sizePref = IntPreference("Size")
@@ -146,30 +142,26 @@ class PartitionWidget(Preference):
         self.bootablePref = CheckPreference("Bootable")
         self.biosbootPref = CheckPreference("BiosBoot")
 
-        layout.addWidget(self.namePref)
-        layout.addWidget(self.sizePref)
-        layout.addWidget(self.mountPointPref)
-        layout.addWidget(self.fileSystemPref)
-        layout.addWidget(self.bootablePref)
-        layout.addWidget(self.biosbootPref)
-        
-        self.setLayout(layout)
-
-        self.setParent(None)
-
         btnDelete = QPushButton("Supprimer")
         btnDelete.clicked.connect(self.delete)
-        layout.addWidget(btnDelete)
+
+        self.addWidget(self.namePref)
+        self.addWidget(self.sizePref)
+        self.addWidget(self.mountPointPref)
+        self.addWidget(self.fileSystemPref)
+        self.addWidget(self.bootablePref)
+        self.addWidget(self.biosbootPref)
+        self.addWidget(btnDelete)
 
     def delete(self):
         self.setParent(None)
 
     def export(self):
-        name = self.namePref.lineEdit.text()
-        size = self.sizePref.spinbox.value()
-        mountpoint = self.mountPointPref.lineEdit.text()
-        filesystem = self.fileSystemPref.cbBox.currentText()
-        bootable = self.bootablePref.checkbox.isChecked()
+        name = self.namePref.getValue()
+        size = self.sizePref.getValue()
+        mountpoint = self.mountPointPref.getValue()
+        filesystem = self.fileSystemPref.getValue()
+        bootable = self.bootablePref.getValue()
 
         attributes = {}
         attributes['name'] = name
@@ -186,8 +178,7 @@ class PartitionWidget(Preference):
 
 class PartitionCategory(Category):
     def __init__(self, title):
-        Category.__init__(self, title)
-        layout = QVBoxLayout()
+        super().__init__(title, QVBoxLayout())
 
         btnAdd = QPushButton("Add")
         btnAdd.clicked.connect(self.addPartition)
@@ -196,10 +187,10 @@ class PartitionCategory(Category):
         self.generalDrivePref = TextPreference("Drive")
         self.generalLabelPref = ComboPreference("Label", ["gpt", "dos"])
 
-        layout.addWidget(self.generalSizePref)
-        layout.addWidget(self.generalDrivePref)
-        layout.addWidget(self.generalLabelPref)
-        layout.addWidget(btnAdd)
+        self.addWidget(self.generalSizePref)
+        self.addWidget(self.generalDrivePref)
+        self.addWidget(self.generalLabelPref)
+        self.addWidget(btnAdd)
         
         self.partitionsLayout = QVBoxLayout()
         
@@ -212,16 +203,14 @@ class PartitionCategory(Category):
         scrollArea.setWidgetResizable(True)
         scrollArea.setWidget(widget)
         scrollArea.setFixedWidth(400)
-        layout.addWidget(scrollArea)
-        
-        self.widget.setLayout(layout)
+        self.addWidget(scrollArea)
+
 
     def addPartition(self):
         partition = PartitionWidget(f"partition")
         self.partitionsLayout.addWidget(partition)
 
     def export(self):
-        super().export()
         size = self.generalSizePref.spinbox.value()
         drive = self.generalDrivePref.lineEdit.text()
 
@@ -235,8 +224,7 @@ class PartitionCategory(Category):
 
 class MirrorsCategory(Category):
     def __init__(self, title):
-        Category.__init__(self, title)
-        layout = QVBoxLayout()
+        super().__init__(title, QVBoxLayout())
 
         self.RegionPreference = ComboPreference("Region :", [])
         self.CountryPreference = ComboPreference("Country :", [])
@@ -244,21 +232,20 @@ class MirrorsCategory(Category):
         self.listUri = QListWidget()
 
         for region in get_mirrors():
-            self.RegionPreference.cbBox.addItem(region.name)
-            self.RegionPreference.cbBox.setItemData(self.RegionPreference.cbBox.count() - 1, region)
+            self.RegionPreference.addItem(region.name, region)
 
-        self.RegionPreference.cbBox.currentIndexChanged.connect(self.changeRegion)
-        self.CountryPreference.cbBox.currentIndexChanged.connect(self.changeCountry)
-        self.MirrorPreference.cbBox.currentIndexChanged.connect(self.changeMirror)
+        self.RegionPreference.cbBox.setCurrentIndex(-1)
+        self.RegionPreference.connectChange(self.changeRegion)
+        self.CountryPreference.connectChange(self.changeCountry)
+        self.MirrorPreference.connectChange(self.changeMirror)
 
-        layout.addWidget(self.RegionPreference)
-        layout.addWidget(self.CountryPreference)
-        layout.addWidget(self.MirrorPreference)
-        layout.addWidget(self.listUri)
-
-        self.widget.setLayout(layout)
+        self.addWidget(self.RegionPreference)
+        self.addWidget(self.CountryPreference)
+        self.addWidget(self.MirrorPreference)
+        self.addWidget(self.listUri)
 
     def changeRegion(self, index):
+        if index == -1: return
         self.CountryPreference.clear()
         countries = self.RegionPreference.cbBox.itemData(index).countries
         for country in countries:
@@ -267,8 +254,9 @@ class MirrorsCategory(Category):
         self.CountryPreference.cbBox.setCurrentIndex(0)
 
     def changeCountry(self, index):
+        if index == -1: return
         self.MirrorPreference.clear()
-        if self.CountryPreference.cbBox.itemData(index) == None:
+        if self.CountryPreference.cbBox.itemData(index) is None:
             return
         mirrors = self.CountryPreference.cbBox.itemData(index).mirrors
         if mirrors is not None:
@@ -278,8 +266,9 @@ class MirrorsCategory(Category):
         self.MirrorPreference.cbBox.setCurrentIndex(0)
 
     def changeMirror(self, index):
+        if index == -1: return
         self.listUri.clear()
-        if self.MirrorPreference.cbBox.itemData(index) == None:
+        if self.MirrorPreference.cbBox.itemData(index) is None:
             return
         uris = self.MirrorPreference.cbBox.itemData(index).uris
         if uris is not None:
@@ -287,8 +276,6 @@ class MirrorsCategory(Category):
                 self.listUri.addItem(uri)
 
     def export(self):
-        super().export()
-        
         urlItem = self.listUri.currentItem()
         if urlItem is not None:
             url = self.listUri.currentItem().text()
@@ -298,33 +285,16 @@ class MirrorsCategory(Category):
         conf.generate()
 
 
-'''class UseFlagCategory(Category):
-    def __init__(self, title):
-        Category.__init__(self, title)
-        layout = QVBoxLayout()
-
-        layout.addWidget(LargeTextPreference("Use Flags"))
-        urlLink = "<a href=\"https://www.gentoo.org/support/use-flags/\">See available use flags</a>"
-        label = QLabel(urlLink)
-        label.setOpenExternalLinks(True)
-        layout.addWidget(label)
-
-        self.widget.setLayout(layout)'''
-
 class KernelCategory(Category):
     def __init__(self, title):
-        Category.__init__(self, title)
-        layout = QVBoxLayout()
-
+        super().__init__(title, QVBoxLayout())
         self.configPreference = ComboPreference("Config :", ["distkernel"])
         self.distkernelPreference =  ComboPreference("DistKernel :", ["gentoo-kernel-bin", "gentoo-kernel"])
 
-        layout.addWidget(self.configPreference)
-        layout.addWidget(self.distkernelPreference)
-        self.widget.setLayout(layout)
+        self.addWidget(self.configPreference)
+        self.addWidget(self.distkernelPreference)
 
     def export(self):
-        super().export()
         config = self.configPreference.cbBox.currentText()
         distkernel = self.distkernelPreference.cbBox.currentText()
         conf = ConfigGenerator(fileInstallerConf, 'kernel', {'config': config, 'distkernel': distkernel})
@@ -333,8 +303,7 @@ class KernelCategory(Category):
 
 class SystemCategory(Category):
     def __init__(self, title):
-        Category.__init__(self, title)
-        layout = QVBoxLayout()
+        super().__init__(title, QVBoxLayout())
 
         self.hostnamePreference = TextPreference("Hostname")
         self.loggerPreference =  ComboPreference("Logger :", ["sysklogd", "syslog-ng", "metalog"])
@@ -343,27 +312,24 @@ class SystemCategory(Category):
         self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
         self.profilePref = TextPreference("profile")
 
-        layout.addWidget(self.hostnamePreference)
-        layout.addWidget(self.loggerPreference)
-        layout.addWidget(self.cronPreference)
-        layout.addWidget(self.initSystemPref)
-        layout.addWidget(self.archPref)
-        layout.addWidget(self.profilePref)
-
-        self.widget.setLayout(layout)
+        self.addWidget(self.hostnamePreference)
+        self.addWidget(self.loggerPreference)
+        self.addWidget(self.cronPreference)
+        self.addWidget(self.initSystemPref)
+        self.addWidget(self.archPref)
+        self.addWidget(self.profilePref)
 
     def export(self):
-        super().export()
-        hostname = self.hostnamePreference.lineEdit.text()
-        logger = self.loggerPreference.cbBox.currentText()
-        cron = self.cronPreference.cbBox.currentText()
-        arch = self.archPref.cbBox.currentText()
-        initsystem = self.initSystemPref.cbBox.currentText()
-        profile = self.profilePref.lineEdit.text()
+        hostname = self.hostnamePreference.getValue()
+        logger = self.loggerPreference.getValue()
+        cron = self.cronPreference.getValue()
+        arch = self.archPref.getValue()
+
+        initsystem = self.initSystemPref.getValue()
+        profile = self.profilePref.getValue()
 
         conf = ConfigGenerator(fileInstallerConf, 'system', {'hostname': hostname, 'logger': logger, 'cron': cron})
         conf.generate()
-
 
         conf1 = ConfigGenerator(fileInstallerConf, 'gentoo', {'arch': arch, 'initsystem': initsystem})
         conf1.generate()
@@ -371,24 +337,19 @@ class SystemCategory(Category):
         conf2 = ConfigGenerator(fileInstallerConf, 'portage', {'profile': profile})
         conf2.generate()
 
-# mode --> bios efi
-# bootloader --> grub, lilo, efibootmgr
 class BootCategory(Category):
     def __init__(self, title):
-        Category.__init__(self, title)
-        layout = QVBoxLayout()
+        super().__init__(title, QVBoxLayout())
 
         self.modePreference =  ComboPreference("Mode :", ["bios", "efi"])
         self.bootloaderPreference = ComboPreference("Bootloader :", ["grub", "lilo", "efibootmgr"])
 
-        layout.addWidget(self.modePreference)
-        layout.addWidget(self.bootloaderPreference)
-        self.widget.setLayout(layout)
+        self.addWidget(self.modePreference)
+        self.addWidget(self.bootloaderPreference)
 
     def export(self):
-        super().export()
-        mode = self.modePreference.cbBox.currentText()
-        bootloader = self.bootloaderPreference.cbBox.currentText()
+        mode = self.modePreference.getValue()
+        bootloader = self.bootloaderPreference.getValue()
         conf = ConfigGenerator(fileInstallerConf, 'boot', {'mode': mode, 'bootloader': bootloader})
         conf.generate()
 
@@ -401,7 +362,6 @@ class SideBar(QListWidget):
         self.addItem(KernelCategory("Kernel"))
         self.addItem(SystemCategory("System"))
         self.addItem(BootCategory("Boot"))
-        #self.addItem(UseFlagCategory("Use flags"))
 
         
         self.setFixedWidth(140)
