@@ -1,20 +1,21 @@
 from abc import abstractmethod
+from turtle import left
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, QUrl, QObject
+from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QObject
 from api import get_mirrors
 
 fileInstallerConf = None
 fileDiskConf = None
 
 from generate_conf import ConfigGenerator
-
+from styles import styles
 
 class Preference(QWidget):
     def __init__(self, title:str):
         QWidget.__init__(self)
         self.title = title
-
+        self.setFixedWidth(300)
 
 class ComboPreference(Preference):
     def __init__(self, title:str, choices:list):
@@ -49,6 +50,8 @@ class TextPreference(Preference):
         layout = QHBoxLayout()
         layout.addWidget(label)
         layout.addWidget(self.lineEdit)
+        
+        self.lineEdit.setFixedWidth(200)
         
         self.setLayout(layout)
 
@@ -99,6 +102,7 @@ class Category(QListWidgetItem):
     def __init__(self, title:str):
         QListWidgetItem.__init__(self, title)
         self.widget = QWidget()
+        self.widget.setObjectName("category")    
         self.title = title
         
     def export(self):
@@ -108,8 +112,8 @@ class Category(QListWidgetItem):
 class LocalisationCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
-        self.langCombo = ComboPreference("Langue", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
-        self.keyboardCombo = ComboPreference("Clavier", ["fr", "azerty"])
+        self.langCombo = ComboPreference("Language", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
+        self.keyboardCombo = ComboPreference("Keyboard", ["fr", "azerty"])
         self.timeZoneCombo = ComboPreference("TimeZone", ["Europe/Berlin", "Europe/Londres"])
         
         layout = QVBoxLayout()
@@ -133,6 +137,7 @@ class PartitionWidget(Preference):
     def __init__(self, title):
         Preference.__init__(self, title)
         layout = QVBoxLayout()
+        widget = QWidget()
         
         self.namePref = TextPreference("Name")
         self.sizePref = IntPreference("Size")
@@ -184,7 +189,7 @@ class PartitionCategory(Category):
         Category.__init__(self, title)
         layout = QVBoxLayout()
 
-        btnAdd = QPushButton("Ajouter")
+        btnAdd = QPushButton("Add")
         btnAdd.clicked.connect(self.addPartition)
         
         self.generalSizePref = IntPreference("Size")
@@ -196,8 +201,18 @@ class PartitionCategory(Category):
         layout.addWidget(self.generalLabelPref)
         layout.addWidget(btnAdd)
         
-        self.partitionsLayout = QHBoxLayout()
-        layout.addLayout(self.partitionsLayout)
+        self.partitionsLayout = QVBoxLayout()
+        
+        widget = QWidget()
+        widget.setLayout(self.partitionsLayout)
+        
+        scrollArea = QScrollArea()
+        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(widget)
+        scrollArea.setFixedWidth(400)
+        layout.addWidget(scrollArea)
         
         self.widget.setLayout(layout)
 
@@ -221,7 +236,7 @@ class InitSystemCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
         
-        self.initSystemPref = ComboPreference("Système d'amorçage", ["openrc", "systemd"])
+        self.initSystemPref = ComboPreference("Init system", ["openrc", "systemd"])
         self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
         self.profilePref = TextPreference("profile")
 
@@ -312,8 +327,8 @@ class MirrorsCategory(Category):
         Category.__init__(self, title)
         layout = QVBoxLayout()
 
-        layout.addWidget(LargeTextPreference("Use Falgs"))
-        urlLink = "<a href=\"https://www.gentoo.org/support/use-flags/\">See use flags available</a>"
+        layout.addWidget(LargeTextPreference("Use Flags"))
+        urlLink = "<a href=\"https://www.gentoo.org/support/use-flags/\">See available use flags</a>"
         label = QLabel(urlLink)
         label.setOpenExternalLinks(True)
         layout.addWidget(label)
@@ -323,8 +338,6 @@ class MirrorsCategory(Category):
 # config --> kconfig, genkernel, distkernel
 # distkernel --> gentoo-kernel gentoo-kernel-bin
 
-class KernelCategory(Category):
-    de
 
 
 class SideBar(QListWidget):
@@ -336,6 +349,9 @@ class SideBar(QListWidget):
         self.addItem(MirrorsCategory("Mirroirs"))
         #self.addItem(UseFlagCategory("Use flags"))
 
+        
+        self.setFixedWidth(140)
+
     def export(self):
         global fileInstallerConf, fileDiskConf
         fileInstallerConf = open("installer/installer.conf", 'w')
@@ -345,28 +361,51 @@ class SideBar(QListWidget):
         fileInstallerConf.close()
         fileDiskConf.close()
 
-
 class Window(QWidget):
     def __init__(self):
         QWidget.__init__(self)
         mainLayout = QHBoxLayout()
 
         self.sidebar = SideBar()
+        self.sidebar.itemSelectionChanged.connect(self.changeMainWidget)
+        
         self.preferencesLayout = QVBoxLayout()
         
-        btnExport = QPushButton("Exporter")
-        btnExport.clicked.connect(self.sidebar.export)
+        self.btnExport = QPushButton("Export")
+        self.btnExport.clicked.connect(self.sidebar.export)
+        self.btnExport.clicked.connect(self.export)
+        self.btnExport.setFixedWidth(140)
+        
+        # verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        
+        self.message = QLabel()
         
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.sidebar)
-        leftLayout.addWidget(btnExport)
+        leftLayout.addStretch()
+        leftLayout.addWidget(self.message)
+        leftLayout.addWidget(self.btnExport)
+        
+        leftPane = QWidget()
+        leftPane.setLayout(leftLayout)
+        leftPane.setObjectName("leftPane")
+        leftPane.setFixedWidth(160)
 
-        self.sidebar.itemSelectionChanged.connect(self.changeMainWidget)
-
-        mainLayout.addLayout(leftLayout)
+        mainLayout.addWidget(leftPane)
         mainLayout.addLayout(self.preferencesLayout)
         
         self.setLayout(mainLayout)
+        
+        self.resize(500, 400)
+        
+        self.setStyleSheet(styles)
+        
+    def removeMessage(self):
+        self.message.setText("")
+        
+    def export(self):
+        self.message.setText("Exported")
+        QTimer.singleShot(5000, self.removeMessage)
 
     def changeMainWidget(self):
         for i in reversed(range(self.preferencesLayout.count())):
