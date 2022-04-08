@@ -335,10 +335,68 @@ class MirrorsCategory(Category):
 
         self.widget.setLayout(layout)'''
 
-# config --> kconfig, genkernel, distkernel
-# distkernel --> gentoo-kernel gentoo-kernel-bin
+class KernelCategory(Category):
+    def __init__(self, title):
+        Category.__init__(self, title)
+        layout = QVBoxLayout()
+
+        self.configPreference = ComboPreference("Config :", ["distkernel"])
+        self.distkernelPreference =  ComboPreference("DistKernel :", ["gentoo-kernel-bin", "gentoo-kernel"])
+
+        layout.addWidget(self.configPreference)
+        layout.addWidget(self.distkernelPreference)
+        self.widget.setLayout(layout)
+
+    def export(self):
+        super().export()
+        config = self.configPreference.cbBox.currentText()
+        distkernel = self.distkernelPreference.cbBox.currentText()
+        conf = ConfigGenerator(fileInstallerConf, 'kernel', {'config': config, 'distkernel': distkernel})
+        conf.generate()
 
 
+class SystemCategory(Category):
+    def __init__(self, title):
+        Category.__init__(self, title)
+        layout = QVBoxLayout()
+
+        self.hostnamePreference = TextPreference("Hostname")
+        self.loggerPreference =  ComboPreference("Logger :", ["sysklogd", "syslog-ng", "metalog"])
+        self.cronPreference = ComboPreference("Cron :", ["bcron", "dcron", "fcron", "cronie"])
+
+        layout.addWidget(self.hostnamePreference)
+        layout.addWidget(self.loggerPreference)
+        layout.addWidget(self.cronPreference)
+        self.widget.setLayout(layout)
+
+    def export(self):
+        super().export()
+        hostname = self.hostnamePreference.lineEdit.text()
+        logger = self.loggerPreference.cbBox.currentText()
+        cron = self.cronPreference.cbBox.currentText()
+        conf = ConfigGenerator(fileInstallerConf, 'system', {'hostname': hostname, 'logger': logger, 'cron': cron})
+        conf.generate()
+
+# mode --> bios efi
+# bootloader --> grub, lilo, efibootmgr
+class BootCategory(Category):
+    def __init__(self, title):
+        Category.__init__(self, title)
+        layout = QVBoxLayout()
+
+        self.modePreference =  ComboPreference("Mode :", ["bios", "efi"])
+        self.bootloaderPreference = ComboPreference("Bootloader :", ["grub", "lilo", "efibootmgr"])
+
+        layout.addWidget(self.modePreference)
+        layout.addWidget(self.bootloaderPreference)
+        self.widget.setLayout(layout)
+
+    def export(self):
+        super().export()
+        mode = self.modePreference.cbBox.currentText()
+        bootloader = self.bootloaderPreference.cbBox.currentText()
+        conf = ConfigGenerator(fileInstallerConf, 'boot', {'mode': mode, 'bootloader': bootloader})
+        conf.generate()
 
 class SideBar(QListWidget):
     def __init__(self):
@@ -347,6 +405,9 @@ class SideBar(QListWidget):
         self.addItem(PartitionCategory("Partitions"))
         self.addItem(InitSystemCategory("Système d'amorçage"))
         self.addItem(MirrorsCategory("Mirroirs"))
+        self.addItem(KernelCategory("Kernel"))
+        self.addItem(SystemCategory("System"))
+        self.addItem(BootCategory("Boot"))
         #self.addItem(UseFlagCategory("Use flags"))
 
         
@@ -417,8 +478,5 @@ class Window(QWidget):
 
 
 
-# locker --> sysklogd, syslog-ng, metalog
-# cron --> bcron dcron fcron cronie
 
-# mode --> bios efi
-# bootloader --> grub, lilo, efibootmgr
+
