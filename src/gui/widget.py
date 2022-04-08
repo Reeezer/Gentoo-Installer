@@ -230,32 +230,8 @@ class PartitionCategory(Category):
 
         for i in range(self.partitionsLayout.count()):
             self.partitionsLayout.itemAt(i).widget().export()
-
-
-class InitSystemCategory(Category):
-    def __init__(self, title):
-        Category.__init__(self, title)
         
-        self.initSystemPref = ComboPreference("Init system", ["openrc", "systemd"])
-        self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
-        self.profilePref = TextPreference("profile")
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.initSystemPref)
-        layout.addWidget(self.archPref)
-        self.widget.setLayout(layout)
-
-    def export(self):
-        super().export()
-        
-        arch = self.archPref.cbBox.currentText()
-        initsystem = self.initSystemPref.cbBox.currentText()
-        profile = self.profilePref.lineEdit.text()
-        conf = ConfigGenerator(fileInstallerConf, 'gentoo', {'arch':arch, 'initsystem': initsystem})
-        conf.generate()
-
-        conf2 = ConfigGenerator(fileInstallerConf, 'portage', {'profile': profile})
-        conf2.generate()
 
 class MirrorsCategory(Category):
     def __init__(self, title):
@@ -363,10 +339,17 @@ class SystemCategory(Category):
         self.hostnamePreference = TextPreference("Hostname")
         self.loggerPreference =  ComboPreference("Logger :", ["sysklogd", "syslog-ng", "metalog"])
         self.cronPreference = ComboPreference("Cron :", ["bcron", "dcron", "fcron", "cronie"])
+        self.initSystemPref = ComboPreference("Init system", ["openrc", "systemd"])
+        self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
+        self.profilePref = TextPreference("profile")
 
         layout.addWidget(self.hostnamePreference)
         layout.addWidget(self.loggerPreference)
         layout.addWidget(self.cronPreference)
+        layout.addWidget(self.initSystemPref)
+        layout.addWidget(self.archPref)
+        layout.addWidget(self.profilePref)
+
         self.widget.setLayout(layout)
 
     def export(self):
@@ -374,8 +357,19 @@ class SystemCategory(Category):
         hostname = self.hostnamePreference.lineEdit.text()
         logger = self.loggerPreference.cbBox.currentText()
         cron = self.cronPreference.cbBox.currentText()
+        arch = self.archPref.cbBox.currentText()
+        initsystem = self.initSystemPref.cbBox.currentText()
+        profile = self.profilePref.lineEdit.text()
+
         conf = ConfigGenerator(fileInstallerConf, 'system', {'hostname': hostname, 'logger': logger, 'cron': cron})
         conf.generate()
+
+
+        conf1 = ConfigGenerator(fileInstallerConf, 'gentoo', {'arch': arch, 'initsystem': initsystem})
+        conf1.generate()
+
+        conf2 = ConfigGenerator(fileInstallerConf, 'portage', {'profile': profile})
+        conf2.generate()
 
 # mode --> bios efi
 # bootloader --> grub, lilo, efibootmgr
@@ -403,7 +397,6 @@ class SideBar(QListWidget):
         QListWidget.__init__(self)
         self.addItem(LocalisationCategory("Localisation"))
         self.addItem(PartitionCategory("Partitions"))
-        self.addItem(InitSystemCategory("Système d'amorçage"))
         self.addItem(MirrorsCategory("Mirroirs"))
         self.addItem(KernelCategory("Kernel"))
         self.addItem(SystemCategory("System"))
