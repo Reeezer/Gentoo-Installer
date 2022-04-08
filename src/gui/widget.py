@@ -4,6 +4,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QUrl, QObject
 from api import get_mirrors
 
+fileInstallerConf = None
+fileDiskConf = None
+
 from generate_conf import ConfigGenerator
 
 
@@ -117,14 +120,13 @@ class LocalisationCategory(Category):
         
     def export(self):
         super().export()
-        file = open('installer/localisation.conf', 'w')
         
         lang = self.langCombo.cbBox.currentText()
         keyboard = self.keyboardCombo.cbBox.currentText()
-        conf = ConfigGenerator(file, 'locale', {'lang':lang, 'keyboard':keyboard})
+        conf = ConfigGenerator(fileInstallerConf, 'locale', {'lang':lang, 'keyboard':keyboard})
         conf.generate()
         timezone = self.timeZoneCombo.cbBox.currentText()
-        conf = ConfigGenerator(file, 'timezone', {'timezone': timezone})
+        conf = ConfigGenerator(fileInstallerConf, 'timezone', {'timezone': timezone})
         conf.generate()
 
 class PartitionWidget(Preference):
@@ -173,8 +175,7 @@ class PartitionWidget(Preference):
         attributes['mountpoint'] = mountpoint
         attributes['filesystem'] = filesystem
 
-        file = open('installer/partitions.conf', 'a')
-        conf = ConfigGenerator(file, name, attributes)
+        conf = ConfigGenerator(fileDiskConf, name, attributes)
         conf.generate()
 
 
@@ -209,10 +210,8 @@ class PartitionCategory(Category):
         size = self.generalSizePref.spinbox.value()
         drive = self.generalDrivePref.lineEdit.text()
 
-        file = open('installer/partitions.conf', 'w')
-        conf = ConfigGenerator(file, 'general', {'size': size, 'drive': drive})
+        conf = ConfigGenerator(fileDiskConf, 'general', {'size': size, 'drive': drive})
         conf.generate()
-        file.close()
 
         for i in range(self.partitionsLayout.count()):
             self.partitionsLayout.itemAt(i).widget().export()
@@ -224,6 +223,7 @@ class InitSystemCategory(Category):
         
         self.initSystemPref = ComboPreference("Système d'amorçage", ["openrc", "systemd"])
         self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
+        self.profilePref = TextPreference("profile")
 
         layout = QVBoxLayout()
         layout.addWidget(self.initSystemPref)
@@ -232,12 +232,15 @@ class InitSystemCategory(Category):
 
     def export(self):
         super().export()
-        file = open('installer/initsystem.conf', 'w')
         
         arch = self.archPref.cbBox.currentText()
         initsystem = self.initSystemPref.cbBox.currentText()
-        conf = ConfigGenerator(file, 'gentoo', {'arch':arch, 'initsystem':initsystem})
+        profile = self.profilePref.lineEdit.text()
+        conf = ConfigGenerator(fileInstallerConf, 'gentoo', {'arch':arch, 'initsystem': initsystem})
         conf.generate()
+
+        conf2 = ConfigGenerator(fileInstallerConf, 'portage', {'profile': profile})
+        conf2.generate()
 
 class MirrorsCategory(Category):
     def __init__(self, title):
@@ -294,18 +297,17 @@ class MirrorsCategory(Category):
 
     def export(self):
         super().export()
-        file = open('installer/mirrors.conf', 'w')
         
         urlItem = self.listUri.currentItem()
         if urlItem is not None:
             url = self.listUri.currentItem().text()
         else:
             url = 'None'
-        conf = ConfigGenerator(file, 'mirror', {'url':url})
+        conf = ConfigGenerator(fileInstallerConf, 'mirror', {'url':url})
         conf.generate()
 
 
-class UseFlagCategory(Category):
+'''class UseFlagCategory(Category):
     def __init__(self, title):
         Category.__init__(self, title)
         layout = QVBoxLayout()
@@ -316,7 +318,13 @@ class UseFlagCategory(Category):
         label.setOpenExternalLinks(True)
         layout.addWidget(label)
 
-        self.widget.setLayout(layout)
+        self.widget.setLayout(layout)'''
+
+# config --> kconfig, genkernel, distkernel
+# distkernel --> gentoo-kernel gentoo-kernel-bin
+
+class KernelCategory(Category):
+    de
 
 
 class SideBar(QListWidget):
@@ -326,11 +334,16 @@ class SideBar(QListWidget):
         self.addItem(PartitionCategory("Partitions"))
         self.addItem(InitSystemCategory("Système d'amorçage"))
         self.addItem(MirrorsCategory("Mirroirs"))
-        self.addItem(UseFlagCategory("Use flags"))
+        #self.addItem(UseFlagCategory("Use flags"))
 
     def export(self):
+        global fileInstallerConf, fileDiskConf
+        fileInstallerConf = open("installer/installer.conf", 'w')
+        fileDiskConf = open("installer/disk.conf", 'w')
         for i in range(self.count()):
             self.item(i).export()
+        fileInstallerConf.close()
+        fileDiskConf.close()
 
 
 class Window(QWidget):
@@ -362,8 +375,7 @@ class Window(QWidget):
 
 
 
-# config --> kconfig, genkernel, distkernel
-# distkernel --> gentoo-kernel gentoo-kernel-bin
+
 
 
 # locker --> sysklogd, syslog-ng, metalog
