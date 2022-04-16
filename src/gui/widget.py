@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QObject
 from api import get_mirrors
 from PyQt5.QtGui import QIcon
+from timezone import timezones
 
 fileInstallerConf = None
 fileDiskConf = None
@@ -57,10 +58,11 @@ class ComboPreference(Preference):
 
 
 class TextPreference(Preference):
-    def __init__(self, title:str):
+    def __init__(self, title: str, default: str = ""):
         super().__init__(title, QHBoxLayout())
 
         self.lineEdit = QLineEdit()
+        self.lineEdit.setText(default)
         self.addWidget(self.lineEdit)
 
         self.lineEdit.setFixedWidth(200)
@@ -118,9 +120,9 @@ class Category(QListWidgetItem):
 class LocalisationCategory(Category):
     def __init__(self, title):
         super().__init__(title, QVBoxLayout(), r".\images\localisation.png")
-        self.langCombo = ComboPreference("Language", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
-        self.keyboardCombo = ComboPreference("Keyboard", ["fr", "azerty"])
-        self.timeZoneCombo = ComboPreference("TimeZone", ["Europe/Berlin", "Europe/Londres"])
+        self.langCombo = ComboPreference("Language (unused)", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
+        self.keyboardCombo = ComboPreference("Keyboard (unused)", ["fr", "azerty"])
+        self.timeZoneCombo = ComboPreference("TimeZone", timezones)
 
         self.addWidget(self.langCombo)
         self.addWidget(self.keyboardCombo)
@@ -142,7 +144,7 @@ class PartitionWidget(Preference):
         self.namePref = TextPreference("Name")
         self.sizePref = IntPreference("Size", suffix=" MiB")
         self.mountPointPref = TextPreference("Mount point")
-        self.fileSystemPref = ComboPreference("File system", ["btrfs", "ext4", "f2f", "jfs", "reiserfs", "xfs", "vfat", "ntfs", "swap"]) #
+        self.fileSystemPref = ComboPreference("File system", ["","btrfs", "ext4", "f2f", "jfs", "reiserfs", "xfs", "vfat", "ntfs", "swap"]) #
         self.bootablePref = CheckPreference("Bootable")
         self.biosbootPref = CheckPreference("BiosBoot")
 
@@ -168,13 +170,14 @@ class PartitionWidget(Preference):
         bootable = self.bootablePref.getValue()
 
         attributes = {}
-        attributes['name'] = name
         if size > 0:
             attributes['size'] = size
         if bootable:
-            attributes['bootable'] = bootable
-        attributes['mountpoint'] = mountpoint
-        attributes['filesystem'] = filesystem
+            attributes['bootable'] = int(bootable)
+        if len(mountpoint) > 0:
+            attributes['mountpoint'] = mountpoint
+        if len(filesystem) > 0:
+            attributes['filesystem'] = filesystem
 
         conf = ConfigGenerator(fileDiskConf, name, attributes)
         conf.generate()
@@ -196,14 +199,14 @@ class PartitionCategory(Category):
         self.addWidget(self.generalLabelPref)
         self.addWidget(btnAdd)
 
-        self.partitionsLayout = QVBoxLayout()
+        self.partitionsLayout = QHBoxLayout()
 
         widget = QWidget()
         widget.setLayout(self.partitionsLayout)
 
         scrollArea = QScrollArea()
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scrollArea.setWidgetResizable(True)
         scrollArea.setWidget(widget)
         scrollArea.setFixedWidth(400)
@@ -314,7 +317,7 @@ class SystemCategory(Category):
         self.cronPreference = ComboPreference("Cron :", ["bcron", "dcron", "fcron", "cronie"])
         self.initSystemPref = ComboPreference("Init system", ["openrc", "systemd"])
         self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
-        self.profilePref = TextPreference("profile")
+        self.profilePref = TextPreference("profile", "default/linux/amd64/17.1")
 
         self.addWidget(self.hostnamePreference)
         self.addWidget(self.loggerPreference)
@@ -374,7 +377,7 @@ class SideBar(QListWidget):
     def export(self):
         global fileInstallerConf, fileDiskConf
         fileInstallerConf = open("installer/installer.conf", 'w')
-        fileDiskConf = open("installer/disk.conf", 'w')
+        fileDiskConf = open("installer/disks.conf", 'w')
         for i in range(self.count()):
             self.item(i).export()
         fileInstallerConf.close()
