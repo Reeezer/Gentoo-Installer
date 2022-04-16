@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QIcon
 
 from widget import *
 
@@ -12,6 +13,7 @@ def main():
     
     window = Window()
     window.setWindowTitle("Gentoo installer")
+    window.setWindowIcon(QIcon('./images/icon.png'))
     window.show()
     
     sys.exit(app.exec_())
