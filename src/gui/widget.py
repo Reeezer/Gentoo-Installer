@@ -36,7 +36,7 @@ class Preference(QWidget):
 class ComboPreference(Preference):
     def __init__(self, title:str, choices:list):
         super().__init__(title, QHBoxLayout())
-        
+
         self.cbBox = QComboBox()
         [self.cbBox.addItem(choice) for choice in choices]
 
@@ -59,10 +59,10 @@ class ComboPreference(Preference):
 class TextPreference(Preference):
     def __init__(self, title:str):
         super().__init__(title, QHBoxLayout())
-        
+
         self.lineEdit = QLineEdit()
         self.addWidget(self.lineEdit)
-        
+
         self.lineEdit.setFixedWidth(200)
 
     def getValue(self):
@@ -70,10 +70,12 @@ class TextPreference(Preference):
 
 
 class IntPreference(Preference):
-    def __init__(self, title:str):
+    def __init__(self, title:str, suffix='', max=999999999):
         super().__init__(title, QHBoxLayout())
-        
+
         self.spinbox = QSpinBox()
+        self.spinbox.setSuffix(suffix)
+        self.spinbox.setMaximum(max)
         self.addWidget(self.spinbox)
 
     def getValue(self):
@@ -83,7 +85,7 @@ class IntPreference(Preference):
 class CheckPreference(Preference):
     def __init__(self, title:str):
         super().__init__(title, QHBoxLayout())
-        
+
         self.checkbox = QCheckBox()
         self.addWidget(self.checkbox)
 
@@ -99,10 +101,10 @@ class Category(QListWidgetItem):
         self.setIcon(QIcon(iconPath))
         self.widget = QWidget()
         self.widget.setLayout(layout)
-        self.widget.setObjectName("category")    
+        self.widget.setObjectName("category")
         self.title = title
         self.layout = layout
-        
+
     def export(self):
         raise NotImplementedError
 
@@ -123,7 +125,7 @@ class LocalisationCategory(Category):
         self.addWidget(self.langCombo)
         self.addWidget(self.keyboardCombo)
         self.addWidget(self.timeZoneCombo)
-        
+
     def export(self):
         lang = self.langCombo.getValue()
         keyboard = self.keyboardCombo.getValue()
@@ -136,9 +138,9 @@ class LocalisationCategory(Category):
 class PartitionWidget(Preference):
     def __init__(self, title):
         super().__init__(title, QVBoxLayout())
-        
+
         self.namePref = TextPreference("Name")
-        self.sizePref = IntPreference("Size")
+        self.sizePref = IntPreference("Size", suffix=" MiB")
         self.mountPointPref = TextPreference("Mount point")
         self.fileSystemPref = ComboPreference("File system", ["btrfs", "ext4", "f2f", "jfs", "reiserfs", "xfs", "vfat", "ntfs", "swap"]) #
         self.bootablePref = CheckPreference("Bootable")
@@ -184,8 +186,8 @@ class PartitionCategory(Category):
 
         btnAdd = QPushButton("Add")
         btnAdd.clicked.connect(self.addPartition)
-        
-        self.generalSizePref = IntPreference("Size")
+
+        self.generalSizePref = IntPreference("Size", suffix=" MiB")
         self.generalDrivePref = TextPreference("Drive")
         self.generalLabelPref = ComboPreference("Label", ["gpt", "dos"])
 
@@ -193,12 +195,12 @@ class PartitionCategory(Category):
         self.addWidget(self.generalDrivePref)
         self.addWidget(self.generalLabelPref)
         self.addWidget(btnAdd)
-        
+
         self.partitionsLayout = QVBoxLayout()
-        
+
         widget = QWidget()
         widget.setLayout(self.partitionsLayout)
-        
+
         scrollArea = QScrollArea()
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -221,7 +223,7 @@ class PartitionCategory(Category):
 
         for i in range(self.partitionsLayout.count()):
             self.partitionsLayout.itemAt(i).widget().export()
-        
+
 
 
 class MirrorsCategory(Category):
@@ -366,7 +368,7 @@ class SideBar(QListWidget):
         self.addItem(SystemCategory("System"))
         self.addItem(BootCategory("Boot"))
 
-        
+
         self.setFixedWidth(140)
 
     def export(self):
@@ -385,24 +387,24 @@ class Window(QWidget):
 
         self.sidebar = SideBar()
         self.sidebar.itemSelectionChanged.connect(self.changeMainWidget)
-        
+
         self.preferencesLayout = QVBoxLayout()
-        
+
         self.btnExport = QPushButton("Export")
         self.btnExport.clicked.connect(self.sidebar.export)
         self.btnExport.clicked.connect(self.export)
         self.btnExport.setFixedWidth(140)
-        
+
         # verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        
+
         self.message = QLabel()
-        
+
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.sidebar)
         #leftLayout.addStretch()
         leftLayout.addWidget(self.message)
         leftLayout.addWidget(self.btnExport)
-        
+
         leftPane = QWidget()
         leftPane.setLayout(leftLayout)
         leftPane.setObjectName("leftPane")
@@ -410,16 +412,16 @@ class Window(QWidget):
 
         mainLayout.addWidget(leftPane)
         mainLayout.addLayout(self.preferencesLayout)
-        
+
         self.setLayout(mainLayout)
-        
+
         self.resize(500, 400)
-        
+
         self.setStyleSheet(styles)
-        
+
     def removeMessage(self):
         self.message.setText("")
-        
+
     def export(self):
         self.message.setText("Exported")
         QTimer.singleShot(5000, self.removeMessage)

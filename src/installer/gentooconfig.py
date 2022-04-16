@@ -40,6 +40,7 @@ class GentooConfig:
         self.act_network()
         self.act_disks()
         self.act_stage3()
+        self.act_copyconfig()
         self.act_basesystem()
         self.act_kernel()
         self.act_sysconfig()
