@@ -4,6 +4,7 @@ from turtle import left
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QObject
 from api import get_mirrors
+from PyQt5.QtGui import QIcon
 
 fileInstallerConf = None
 fileDiskConf = None
@@ -93,8 +94,9 @@ class CheckPreference(Preference):
 
 
 class Category(QListWidgetItem):
-    def __init__(self, title:str, layout: QLayout = None):
+    def __init__(self, title:str, layout: QLayout = None, iconPath: str = ""):
         QListWidgetItem.__init__(self, title)
+        self.setIcon(QIcon(iconPath))
         self.widget = QWidget()
         self.widget.setLayout(layout)
         self.widget.setObjectName("category")    
@@ -113,7 +115,7 @@ class Category(QListWidgetItem):
 
 class LocalisationCategory(Category):
     def __init__(self, title):
-        super().__init__(title, QVBoxLayout())
+        super().__init__(title, QVBoxLayout(), r".\images\localisation.png")
         self.langCombo = ComboPreference("Language", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
         self.keyboardCombo = ComboPreference("Keyboard", ["fr", "azerty"])
         self.timeZoneCombo = ComboPreference("TimeZone", ["Europe/Berlin", "Europe/Londres"])
@@ -178,7 +180,7 @@ class PartitionWidget(Preference):
 
 class PartitionCategory(Category):
     def __init__(self, title):
-        super().__init__(title, QVBoxLayout())
+        super().__init__(title, QVBoxLayout(), r".\images\partition.png")
 
         btnAdd = QPushButton("Add")
         btnAdd.clicked.connect(self.addPartition)
@@ -224,7 +226,7 @@ class PartitionCategory(Category):
 
 class MirrorsCategory(Category):
     def __init__(self, title):
-        super().__init__(title, QVBoxLayout())
+        super().__init__(title, QVBoxLayout(), r".\images\mirror.png")
 
         self.RegionPreference = ComboPreference("Region :", [])
         self.CountryPreference = ComboPreference("Country :", [])
@@ -287,7 +289,7 @@ class MirrorsCategory(Category):
 
 class KernelCategory(Category):
     def __init__(self, title):
-        super().__init__(title, QVBoxLayout())
+        super().__init__(title, QVBoxLayout(), r".\images\kernel.png")
         self.configPreference = ComboPreference("Config :", ["distkernel"])
         self.distkernelPreference =  ComboPreference("DistKernel :", ["gentoo-kernel-bin", "gentoo-kernel"])
 
@@ -303,7 +305,7 @@ class KernelCategory(Category):
 
 class SystemCategory(Category):
     def __init__(self, title):
-        super().__init__(title, QVBoxLayout())
+        super().__init__(title, QVBoxLayout(), r".\images\system.png")
 
         self.hostnamePreference = TextPreference("Hostname")
         self.loggerPreference =  ComboPreference("Logger :", ["sysklogd", "syslog-ng", "metalog"])
@@ -339,7 +341,7 @@ class SystemCategory(Category):
 
 class BootCategory(Category):
     def __init__(self, title):
-        super().__init__(title, QVBoxLayout())
+        super().__init__(title, QVBoxLayout(), r".\images\boot.png")
 
         self.modePreference =  ComboPreference("Mode :", ["bios", "efi"])
         self.bootloaderPreference = ComboPreference("Bootloader :", ["grub", "lilo", "efibootmgr"])
@@ -356,6 +358,7 @@ class BootCategory(Category):
 class SideBar(QListWidget):
     def __init__(self):
         QListWidget.__init__(self)
+        self.setIconSize(QSize(30,30))
         self.addItem(LocalisationCategory("Localisation"))
         self.addItem(PartitionCategory("Partitions"))
         self.addItem(MirrorsCategory("Mirroirs"))
@@ -396,7 +399,7 @@ class Window(QWidget):
         
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.sidebar)
-        leftLayout.addStretch()
+        #leftLayout.addStretch()
         leftLayout.addWidget(self.message)
         leftLayout.addWidget(self.btnExport)
         

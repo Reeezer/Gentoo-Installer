@@ -57,6 +57,14 @@ styles = """
         padding: 4px;
     }
     
+    QComboBox, QSpinBox {
+        background-color: #e7e7e7; 
+        color: #333333; 
+        border-radius: 4px; 
+        padding: 4px;
+    }
+    
+    
     QLabel {
         color: #333333; 
     }
