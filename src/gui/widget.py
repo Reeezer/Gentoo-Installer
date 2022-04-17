@@ -376,8 +376,8 @@ class SideBar(QListWidget):
 
     def export(self):
         global fileInstallerConf, fileDiskConf
-        fileInstallerConf = open("installer/installer.conf", 'w')
-        fileDiskConf = open("installer/disks.conf", 'w')
+        fileInstallerConf = open("config/installer.conf", 'w')
+        fileDiskConf = open("config/disks.conf", 'w')
         for i in range(self.count()):
             self.item(i).export()
         fileInstallerConf.close()
