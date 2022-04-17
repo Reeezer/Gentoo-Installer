@@ -90,7 +90,7 @@ class GentooConfig:
         self.initsystem = self.sysconfigparser.get('gentoo', 'initsystem', fallback='openrc')
         # TODO add EFI/BIOS option
 
-        self.mirror = self.sysconfigparser.get('mirror', 'url', fallback="https://mirror.init7.net") # FIXME find a better default mirror, see if it's possible to use gentoo's bouncer
+        self.mirror = self.sysconfigparser.get('mirror', 'url', fallback="https://mirror.init7.net/gentoo/") # FIXME find a better default mirror, see if it's possible to use gentoo's bouncer
 
         self.profile = self.sysconfigparser.get('portage', 'profile', fallback="default/linux/amd64/17.1")
 
@@ -109,8 +109,9 @@ class GentooConfig:
         self.bootloader = self.sysconfigparser.get('boot', 'bootloader', fallback='grub')
 
         # generate additional config
-        self.mirror_base_url = f"{self.mirror}/gentoo/releases/{self.architecture}/autobuilds"
+        self.mirror_base_url = f"{self.mirror}/releases/{self.architecture}/autobuilds"
         self.latest_stage3_url = f"{self.mirror_base_url}/latest-stage3-{self.architecture}-{self.initsystem}.txt"
+        print(self.mirror)
 
     # pre-install setup (like variables and needed generated files)
 
@@ -372,7 +373,7 @@ class GentooConfig:
         self.chrootshell.add_comment("crond")
         self.chrootshell.add_command(f"emerge sys-process/{self.cron}")
         if self.initsystem == 'openrc':
-            self.chrootshell.add_command(f"rc-update add {self.cron} default") # FIXME check if package name matches service name
+            self.chrootshell.add_command(f"rc-update add {self.cron} default") # FIXME check if package name matches service name : UPDATE : nope
         elif self.initsystem == 'systemd':
             self.chrootshell.add_command(f"systemctl enable {self.cron}")
         if self.cron == 'dcron':
