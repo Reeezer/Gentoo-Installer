@@ -209,7 +209,6 @@ class PartitionCategory(Category):
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         scrollArea.setWidgetResizable(True)
         scrollArea.setWidget(widget)
-        scrollArea.setFixedWidth(400)
         self.addWidget(scrollArea)
 
 
@@ -376,8 +375,8 @@ class SideBar(QListWidget):
 
     def export(self):
         global fileInstallerConf, fileDiskConf
-        fileInstallerConf = open("installer/installer.conf", 'w')
-        fileDiskConf = open("installer/disks.conf", 'w')
+        fileInstallerConf = open("config/installer.conf", 'w')
+        fileDiskConf = open("config/disks.conf", 'w')
         for i in range(self.count()):
             self.item(i).export()
         fileInstallerConf.close()
