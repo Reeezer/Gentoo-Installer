@@ -209,7 +209,6 @@ class PartitionCategory(Category):
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         scrollArea.setWidgetResizable(True)
         scrollArea.setWidget(widget)
-        scrollArea.setFixedWidth(400)
         self.addWidget(scrollArea)
 
 
