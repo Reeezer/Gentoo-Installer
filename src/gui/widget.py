@@ -168,12 +168,15 @@ class PartitionWidget(Preference):
         mountpoint = self.mountPointPref.getValue()
         filesystem = self.fileSystemPref.getValue()
         bootable = self.bootablePref.getValue()
+        biosboot = self.biosbootPref.getValue()
 
         attributes = {}
         if size > 0:
             attributes['size'] = size
         if bootable:
             attributes['bootable'] = int(bootable)
+        if biosboot:
+            attributes['biosboot'] = int(biosboot)
         if len(mountpoint) > 0:
             attributes['mountpoint'] = mountpoint
         if len(filesystem) > 0:
