@@ -1,17 +1,15 @@
-from abc import abstractmethod
-from turtle import left
-
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, QUrl, QSize, QTimer, QObject
+from PyQt5.QtCore import Qt, QSize, QTimer
 from api import get_mirrors
 from PyQt5.QtGui import QIcon
 from timezone import timezones
-
-fileInstallerConf = None
-fileDiskConf = None
+import os
 
 from generate_conf import ConfigGenerator
 from styles import styles
+
+fileInstallerConf = None
+fileDiskConf = None
 
 class Preference(QWidget):
     def __init__(self, title: str, layout: QLayout = None):
@@ -30,7 +28,7 @@ class Preference(QWidget):
             self.layout.addWidget(widget)
 
     def getValue(self):
-        print(self.title + "AbstractMethode")
+        print(self.title + "abstract method")
 
 
 
@@ -122,7 +120,7 @@ class LocalisationCategory(Category):
         super().__init__(title, QVBoxLayout(), r".\images\localisation.png")
         self.langCombo = ComboPreference("Language (unused)", ["fr_FR.UTF-8", "de_DE.UTF-8", "en_US.UTF-8"])
         self.keyboardCombo = ComboPreference("Keyboard (unused)", ["fr", "azerty"])
-        self.timeZoneCombo = ComboPreference("TimeZone", timezones)
+        self.timeZoneCombo = ComboPreference("Time zone", timezones)
 
         self.addWidget(self.langCombo)
         self.addWidget(self.keyboardCombo)
@@ -146,9 +144,9 @@ class PartitionWidget(Preference):
         self.mountPointPref = TextPreference("Mount point")
         self.fileSystemPref = ComboPreference("File system", ["","btrfs", "ext4", "f2f", "jfs", "reiserfs", "xfs", "vfat", "ntfs", "swap"]) #
         self.bootablePref = CheckPreference("Bootable")
-        self.biosbootPref = CheckPreference("BiosBoot")
+        self.biosbootPref = CheckPreference("Bios boot")
 
-        btnDelete = QPushButton("Supprimer")
+        btnDelete = QPushButton("Remove")
         btnDelete.clicked.connect(self.delete)
 
         self.addWidget(self.namePref)
@@ -213,7 +211,7 @@ class PartitionCategory(Category):
 
 
     def addPartition(self):
-        partition = PartitionWidget(f"partition")
+        partition = PartitionWidget(f"Partition")
         self.partitionsLayout.addWidget(partition)
 
     def export(self):
@@ -232,9 +230,9 @@ class MirrorsCategory(Category):
     def __init__(self, title):
         super().__init__(title, QVBoxLayout(), r".\images\mirror.png")
 
-        self.RegionPreference = ComboPreference("Region :", [])
-        self.CountryPreference = ComboPreference("Country :", [])
-        self.MirrorPreference = ComboPreference("Mirror :", [])
+        self.RegionPreference = ComboPreference("Region", [])
+        self.CountryPreference = ComboPreference("Country", [])
+        self.MirrorPreference = ComboPreference("Mirror", [])
         self.listUri = QListWidget()
 
         for region in get_mirrors():
@@ -294,8 +292,8 @@ class MirrorsCategory(Category):
 class KernelCategory(Category):
     def __init__(self, title):
         super().__init__(title, QVBoxLayout(), r".\images\kernel.png")
-        self.configPreference = ComboPreference("Config :", ["distkernel"])
-        self.distkernelPreference =  ComboPreference("DistKernel :", ["gentoo-kernel-bin", "gentoo-kernel"])
+        self.configPreference = ComboPreference("Config", ["distkernel"])
+        self.distkernelPreference =  ComboPreference("Dist. kernel", ["gentoo-kernel-bin", "gentoo-kernel"])
 
         self.addWidget(self.configPreference)
         self.addWidget(self.distkernelPreference)
@@ -312,8 +310,8 @@ class SystemCategory(Category):
         super().__init__(title, QVBoxLayout(), r".\images\system.png")
 
         self.hostnamePreference = TextPreference("Hostname")
-        self.loggerPreference =  ComboPreference("Logger :", ["sysklogd", "syslog-ng", "metalog"])
-        self.cronPreference = ComboPreference("Cron :", ["bcron", "dcron", "fcron", "cronie"])
+        self.loggerPreference =  ComboPreference("Logger", ["sysklogd", "syslog-ng", "metalog"])
+        self.cronPreference = ComboPreference("Cron", ["bcron", "dcron", "fcron", "cronie"])
         self.initSystemPref = ComboPreference("Init system", ["openrc", "systemd"])
         self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
         self.profilePref = TextPreference("profile", "default/linux/amd64/17.1")
@@ -347,8 +345,8 @@ class BootCategory(Category):
     def __init__(self, title):
         super().__init__(title, QVBoxLayout(), r".\images\boot.png")
 
-        self.modePreference =  ComboPreference("Mode :", ["bios", "efi"])
-        self.bootloaderPreference = ComboPreference("Bootloader :", ["grub", "lilo", "efibootmgr"])
+        self.modePreference =  ComboPreference("Mod", ["bios", "efi"])
+        self.bootloaderPreference = ComboPreference("Bootloader", ["grub", "lilo", "efibootmgr"])
 
         self.addWidget(self.modePreference)
         self.addWidget(self.bootloaderPreference)
@@ -365,20 +363,24 @@ class SideBar(QListWidget):
         self.setIconSize(QSize(30,30))
         self.addItem(LocalisationCategory("Localisation"))
         self.addItem(PartitionCategory("Partitions"))
-        self.addItem(MirrorsCategory("Mirroirs"))
+        self.addItem(MirrorsCategory("Mirrors"))
         self.addItem(KernelCategory("Kernel"))
         self.addItem(SystemCategory("System"))
         self.addItem(BootCategory("Boot"))
-
 
         self.setFixedWidth(140)
 
     def export(self):
         global fileInstallerConf, fileDiskConf
+        
+        if not os.path.exists("config"):
+            os.mkdir("config")
         fileInstallerConf = open("config/installer.conf", 'w')
         fileDiskConf = open("config/disks.conf", 'w')
+        
         for i in range(self.count()):
             self.item(i).export()
+            
         fileInstallerConf.close()
         fileDiskConf.close()
 
@@ -397,13 +399,10 @@ class Window(QWidget):
         self.btnExport.clicked.connect(self.export)
         self.btnExport.setFixedWidth(140)
 
-        # verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
         self.message = QLabel()
 
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.sidebar)
-        #leftLayout.addStretch()
         leftLayout.addWidget(self.message)
         leftLayout.addWidget(self.btnExport)
 
@@ -432,11 +431,3 @@ class Window(QWidget):
         for i in reversed(range(self.preferencesLayout.count())):
             self.preferencesLayout.itemAt(i).widget().setParent(None)
         self.preferencesLayout.addWidget(self.sidebar.selectedItems()[0].widget)
-
-
-
-
-
-
-
-

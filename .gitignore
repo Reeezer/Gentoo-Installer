@@ -3,5 +3,4 @@ __pycache__/
 autogen/
 install.tar.gz
 
-config/disks.conf
-config/installer.conf
+config/
