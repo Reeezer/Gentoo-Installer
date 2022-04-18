@@ -318,7 +318,7 @@ class SystemCategory(Category):
         self.loggerPreference =  ComboPreference("Logger :", ["sysklogd", "syslog-ng", "metalog"])
         self.cronPreference = ComboPreference("Cron :", ["cronie", "bcron", "dcron", "fcron"])
         self.initSystemPref = ComboPreference("Init system", ["openrc", "systemd"])
-        self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
+        self.archPref = ComboPreference("ARCH", ["amd64", "i386"])
         self.profilePref = TextPreference("profile", "default/linux/amd64/17.1")
 
         self.addWidget(self.hostnamePreference)
