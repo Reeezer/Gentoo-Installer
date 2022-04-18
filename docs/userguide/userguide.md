@@ -29,7 +29,8 @@ Toute cette section est donnée à titre d'indication. Afin de vous faciliter la
 - Cloner le projet
     - https://github.com/frostblue/gentoo-installer
 - Si pas déjà présent, installer Python3
-    - Installer via pip le paquet `PyQt5`
+    - Installer via pip les paquets présents dans `requirements.txt`
+    (possibilité pour cette étape d'tuliser le module venv de python)
     - Si lancé depuis linux il est possible de devoir aussi installer Qt5 (voir ses paquets en version dev) manuellement
 - Lancer le script `guiconfig_geninstall.sh`
     - Dans **Localisation**
