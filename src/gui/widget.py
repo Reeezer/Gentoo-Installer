@@ -166,12 +166,15 @@ class PartitionWidget(Preference):
         mountpoint = self.mountPointPref.getValue()
         filesystem = self.fileSystemPref.getValue()
         bootable = self.bootablePref.getValue()
+        biosboot = self.biosbootPref.getValue()
 
         attributes = {}
         if size > 0:
             attributes['size'] = size
         if bootable:
             attributes['bootable'] = int(bootable)
+        if biosboot:
+            attributes['biosboot'] = int(biosboot)
         if len(mountpoint) > 0:
             attributes['mountpoint'] = mountpoint
         if len(filesystem) > 0:
@@ -311,7 +314,7 @@ class SystemCategory(Category):
 
         self.hostnamePreference = TextPreference("Hostname")
         self.loggerPreference =  ComboPreference("Logger", ["sysklogd", "syslog-ng", "metalog"])
-        self.cronPreference = ComboPreference("Cron", ["bcron", "dcron", "fcron", "cronie"])
+        self.cronPreference = ComboPreference("Cron", ["cronie", "bcron", "dcron", "fcron"])
         self.initSystemPref = ComboPreference("Init system", ["openrc", "systemd"])
         self.archPref = ComboPreference("ARCH", ["amd64", "amd32"])
         self.profilePref = TextPreference("profile", "default/linux/amd64/17.1")
