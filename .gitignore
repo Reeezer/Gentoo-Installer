@@ -2,6 +2,7 @@ __pycache__/
 .idea/
 autogen/
 install.tar.gz
+!dist/install.tar.gz
 
 config/disks.conf
 config/installer.conf
