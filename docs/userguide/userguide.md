@@ -3,7 +3,7 @@
 Afin de simplifier la correction du TP, nous vous offrons ce guide d'utilisation détaillé qui comporte deux parties.
 
 - Création de la machine virtuelle Gentoo, téléchargement et démarrage de l'ISO d'installation
-- Génération et execution du script d'installation
+- Génération et exécution du script d'installation
 
 Toutes les étapes que vous voyez ici se retrouvent également sur la vidéo de démonstration.
 
@@ -12,7 +12,7 @@ Toutes les étapes que vous voyez ici se retrouvent également sur la vidéo de 
 - Créer une machine virtuelle
     - CPU 64 bits (mettre le nombre maximum de cores)
     - Boot en mode BIOS (par défaut sur VirtualBox)
-    - 4GB de RAM au moins (sauf si vous aimez attendre, de plus on a pas testé moins)
+    - 4GB de RAM au moins (sauf si vous aimez attendre, et on n’a pas testé moins)
     - Un unique disque de 64GB
 - Télécharger l'ISO d'installation minimale de Gentoo
     - https://www.gentoo.org/downloads/
@@ -20,18 +20,18 @@ Toutes les étapes que vous voyez ici se retrouvent également sur la vidéo de 
 - Démarrer la machine virtuelle
     - Appuyer sur `enter` au menu de boot
     - Lorsque la machine vous demande un clavier, tapez `sf` (Swiss French), ou alors si vous l'avez manqué tapez `loadkeys fr_CH`.w
-    - Si le démarrage se coince sur l'init syslog-ng appuyer sur `CTRL+C` et `enter` quelques fois (redémarrer si c'est toujours coincé et faire la manipulation immédiatement une fois arrivé sur syslog-ng). C'est possible de devoir spammer cette combinaison plusieurs fois avant que ça marche. Aucune idée de pourquoi ça fait ça nous n'avions jamais eu ça auparavent.
+    - Si le démarrage se coince sur l'init syslog-ng appuyer sur `CTRL+C` et `enter` quelques fois (redémarrer si c'est toujours coincé et faire la manipulation immédiatement une fois arrivé sur syslog-ng). C'est possible de devoir spammer cette combinaison plusieurs fois avant que cela fonctionne. Aucune idée de pourquoi ça fait ça nous n'avions jamais eu ça auparavant.
 
 ## Génération du script d'installation
 
-Toute cette section est donnée à titre d'indication. Afin de vous faciliter la vie une archive du script d'installation toute prête est disponible à l'adresse [`https://github.com/frostblue/gentoo-installer/raw/main/dist/install.tar.gz`](https://github.com/frostblue/gentoo-installer/raw/main/dist/install.tar.gz)
+Toute cette section est donnée à titre d'indication. Afin de vous faciliter la vie, une archive du script d'installation toute prête est disponible à l'adresse [`https://github.com/frostblue/gentoo-installer/raw/main/dist/install.tar.gz`](https://github.com/frostblue/gentoo-installer/raw/main/dist/install.tar.gz)
 
 - Cloner le projet
     - https://github.com/frostblue/gentoo-installer
 - Si pas déjà présent, installer Python3
     - Installer via pip les paquets présents dans `requirements.txt`
-    (possibilité pour cette étape d'tuliser le module venv de python)
-    - Si lancé depuis linux il est possible de devoir aussi installer Qt5 (voir ses paquets en version dev) manuellement
+    (possibilité pour cette étape d'utiliser en environnement virtuel nommé venv, ou de directement installer les packages sur votre machine)
+    - Si lancé depuis linux, il est possible de devoir aussi installer PyQt5 (voir ses paquets en version dev) manuellement
 - Lancer le script `guiconfig_geninstall.sh`
     - Dans **Localisation**
         - Changer la Time Zone
@@ -39,7 +39,7 @@ Toute cette section est donnée à titre d'indication. Afin de vous faciliter la
         - Taille de 65000 MiB
         - Drive : `/dev/sda`
         - Label `gpt`
-        - Ajouter 3 partitions (laisser vide les champs non spécifiés ici; les noms des partitions ne sont pas importants mais doivent être présents)
+        - Ajouter 3 partitions (laisser vide les champs non spécifiés ici; les noms des partitions ne sont pas importants, mais doivent être présents)
             - Partition 1
                 - Name : `bios`
                 - Size : 2 MiB
@@ -56,8 +56,8 @@ Toute cette section est donnée à titre d'indication. Afin de vous faciliter la
                 - Filesystem : `ext4`
                 - Mountpoint : `/`
     - Dans **Mirroirs**
-        - Sélectionner un serveur parmis ceux proposés (récupérés dynamiquement via l'API Gentoo, idéalement séléctionner celui en Suisse)
-        - Ne pas oublier de séléctionner l'URL dans la liste du bas (les liens `rsync` n'ont pas été testés, privilégier `https`).
+        - Sélectionner un serveur parmi ceux proposés (récupérés dynamiquement via l'API Gentoo, idéalement sélectionnez celui en Suisse)
+        - Ne pas oublier de sélectionner l'URL dans la liste du bas (les liens `rsync` n'ont pas été testés, privilégier `https`).
     - Dans **System**
         - Mettre un hostname au choix
 - Appuyer sur le bouton `Export` en bas à gauche
@@ -67,7 +67,7 @@ Toute cette section est donnée à titre d'indication. Afin de vous faciliter la
 
 ## Installation de la machine virtuelle
 
-Une fois le script d'installation généré il suffit de le copier sur la machine virtuelle
+Une fois le script d'installation généré, il suffit de le copier sur la machine virtuelle
 
 ```shell=
 mkdir installer
@@ -81,10 +81,11 @@ On peut ensuite se rendre dans le dossier `autogen`, lancer `install.sh` et alle
 cd autogen
 ./install.sh
 ```
-Si tout s'est bien passé vous devriez avoir ça sur votre écran
+
+Si tout s'est bien passé, vous devriez avoir cela sur votre écran
 
 ![](https://i.imgur.com/nJBwmrI.png)
 
-Il vous suffira par la suite d'éteindre la machine virtuelle, enlever l'ISO d'installation et la redémarrer et voilà, une installation très basique de Gentoo!
+Il vous suffira par la suite d'éteindre la machine virtuelle, enlever l'ISO d'installation, la redémarrer et voilà, une installation très basique de Gentoo !
 
-Pour vous connecter il suffit de mettre `root` comme nom d'utilisateur, qui n'ayant pas de mot de passe pourra se connecter immédiatement. Notez que pour le moment le layout du clavier est redevenu celui américain, il suffit pour que le changement soit permanent d'éditer le fichier `/etc/conf.d/keymaps`, ou de simplement inclure le fichier de configuration déjà modifié dans le dossier `etc` du projet dont le contenu est automatiquement copié sur la machine pendant l'installation
+Pour vous connecter, il suffit de mettre `root` comme nom d'utilisateur, qui n'ayant pas de mot de passe pourra se connecter immédiatement. Notez que pour le moment la disposition du clavier est redevenue américaine, il suffit pour que le changement soit permanent d'éditer le fichier `/etc/conf.d/keymaps`, ou de simplement inclure le fichier de configuration déjà modifié dans le dossier `etc` du projet, dont le contenu est automatiquement copié sur la machine pendant l'installation.
