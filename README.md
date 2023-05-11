@@ -1,9 +1,7 @@
-# TP03 Conception OS - Configuration et compilation automatique d'un système Gentoo
+# Automated Configuration and Compilation of a Gentoo System
 
-###### Participants : Tania Tripiciano, Luca Meyer, Léon Muller
+Configuring and compiling the Gentoo operating system is a time-consuming and tedious task, typically requiring a week of free time to manually set up due to the extensive customization options available.
 
-## Cahier des charges
+To address this, we have developed a program that allows users to customize their Gentoo system through a graphical interface or by directly modifying the configuration file. The program automatically compiles the Gentoo operating system on a kernel based on the generated configuration file. As a result, users only need to select their desired parameters, initiate the compilation process, and enjoy a long coffee break.
 
-La compilation et configuration du système d'exploitation Gentoo est une opération longue et fastidieuse, il faut en général une semaine de libre pour pouvoir tout configurer à la main, tant les possibilités de personnalisation sont nombreuses.
-
-Nous avons donc choisi de créer un programme permettant à un utilisateur de choisir via une interface graphique (ou directement en modifiant le fichier de configuration à la main) de choisir la personnalisation du système qu'il souhaite. Puis de compiler automatiquement, sur un noyau, le système d'exploitation Gentoo en fonction du fichier de configuration généré. Ainsi l'utilisateur n'aura besoin que de choisir les paramètres qu'il souhaite, de lancer la compilation, et de se faire couler un long café.
+This project aims to simplify and automate the configuration and compilation process of Gentoo, providing users with a streamlined method for tailoring their system to their preferences.
